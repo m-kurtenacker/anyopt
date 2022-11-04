@@ -40,6 +40,7 @@ target_include_directories(anyopt PUBLIC ${Thorin_INCLUDE_DIRS} ../include)
 
 target_link_libraries(anyopt PUBLIC ${Thorin_LIBRARIES})
 #target_link_libraries(anyopt PUBLIC libartic)
+target_link_libraries(anyopt PRIVATE nlohmann_json::nlohmann_json)
 
 if (Thorin_HAS_LLVM_SUPPORT)
     target_compile_definitions(anyopt PUBLIC -DENABLE_LLVM)
