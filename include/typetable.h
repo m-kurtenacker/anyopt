@@ -3,6 +3,7 @@
 
 #include<thorin/world.h>
 #include<nlohmann/json.hpp>
+#include<map>
 
 using json = nlohmann::json;
 

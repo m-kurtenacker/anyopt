@@ -13,11 +13,45 @@ IRBuilder::DefType IRBuilder::resolvedef (std::string def_type) {
         return DefType::InvalidDef;
 }
 
+thorin::Array<const thorin::Def*> IRBuilder::get_arglist (json arg_list) {
+    //Get all argument types based on their alias.
+    thorin::Array<const thorin::Def*> args(arg_list.size());
+    for (int argnum = 0; argnum < arg_list.size(); ++argnum) {
+        json arg_desc = arg_list[argnum];
+        args[argnum] = get_def(arg_desc.get<std::string>());
+    }
+
+    return args;
+}
+
+const thorin::Def* IRBuilder::get_def (std::string type_name) {
+    auto it = known_defs.find(type_name);
+    assert(it != known_defs.end() && "Unknown argument name!");
+    return it->second;
+}
+
 const thorin::Def * IRBuilder::reconstruct_def(json desc) {
     const thorin::Def* return_def = nullptr;
     switch (resolvedef(desc["type"])) {
     case DefType::Continuation: {
         std::cerr << "Building continuation named " << desc["name"] << std::endl;
+        auto fn_type = typetable_.get_type(desc["fn_type"].get<std::string>())->as<thorin::FnType>();
+        thorin::Continuation* continuation = world_.continuation(fn_type);
+        for (size_t i = 0; i < desc["arg_names"].size(); ++i) {
+            auto arg = desc["arg_names"][i];
+            known_defs[arg.get<std::string>()] = continuation->param(i);
+        }
+        auto args = get_arglist(desc["app"]["args"]);
+        auto callee = get_def(desc["app"]["target"]);
+        continuation->jump(callee, args);
+        if (desc.contains("external")) {
+            if (desc["external"].get<bool>()) {
+                continuation->set_name(desc["name"]);
+                world_.make_external(continuation);
+            }
+        }
+        continuation->dump();
+        return_def = continuation;
         break;
     }
     case DefType::Constant: {
@@ -27,10 +61,11 @@ const thorin::Def * IRBuilder::reconstruct_def(json desc) {
         thorin::Box value(desc["value"].get<thorin::s64>());
         const thorin::Def* literal = world_.literal(primtype->primtype_tag(), value, {}, primtype->length());
         literal->dump();
+        return_def = literal;
         break;
     }
     default:
         std::cerr << "Def is invalid" << std::endl;
     }
-    return nullptr;
+    return known_defs[desc["name"].get<std::string>()] = return_def;
 }

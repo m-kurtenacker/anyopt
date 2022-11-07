@@ -4,9 +4,11 @@
 
 #include<iostream>
 #include<fstream>
-#include<map>
 
 #include<thorin/world.h>
+#include<thorin/be/codegen.h>
+#include<thorin/be/llvm/llvm.h>
+#include<thorin/be/llvm/cpu.h>
 
 #define DUMP_TYPE
 
@@ -26,7 +28,7 @@ int main (int argc, char** argv) {
         std::cout << t["name"].get<std::string>() << std::endl;
     }
 
-    thorin::World world;
+    thorin::World world(data["module"].get<std::string>());
 
     TypeTable table(world);
 
@@ -52,6 +54,26 @@ int main (int argc, char** argv) {
     for (auto it : data["defs"]) {
         const thorin::Def* def = irbuilder.reconstruct_def(it);
     }
+
+    world.dump();
+
+    world.opt();
+
+    auto emit_to_file = [&] (thorin::CodeGen& cg) {
+        auto name = data["module"].get<std::string>() + cg.file_ext();
+
+        std::ofstream file(name);
+        assert(file);
+
+        cg.emit_stream(file);
+    };
+
+    std::string a = "";
+    std::string b = "";
+    std::string c = "";
+
+    thorin::llvm::CPUCodeGen cg(world, 0, "", a, b, c);
+    emit_to_file(cg);
 
     return 0;
 }
