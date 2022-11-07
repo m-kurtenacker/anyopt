@@ -32,7 +32,11 @@
 #    target_compile_definitions(libartic PUBLIC -DCOLORIZE)
 #endif()
 
-add_executable(anyopt main.cpp)
+add_executable(anyopt
+    main.cpp
+    typetable.cpp
+    irbuilder.cpp
+)
 set_target_properties(anyopt PROPERTIES CXX_STANDARD 17)
 target_compile_definitions(anyopt PUBLIC -DARTIC_VERSION_MAJOR=${PROJECT_VERSION_MAJOR} -DARTIC_VERSION_MINOR=${PROJECT_VERSION_MINOR})
 
