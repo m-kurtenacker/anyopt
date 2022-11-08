@@ -29,6 +29,7 @@ private:
 
     DefType resolvedef (std::string def_type);
     thorin::ArithOpTag resolve_arithop_tag (std::string arithop_tag);
+    thorin::CmpTag resolve_cmp_tag (std::string cmp_tag);
 
     thorin::Array<const thorin::Def*> get_arglist (json arg_list);
 

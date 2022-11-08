@@ -49,21 +49,36 @@ const thorin::Def * IRBuilder::build_Constant (json desc) {
 }
 
 const thorin::Def * IRBuilder::build_Continuation (json desc) {
-    auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
-    thorin::Continuation* continuation = world_.continuation(fn_type);
-    for (size_t i = 0; i < desc["arg_names"].size(); ++i) {
-        auto arg = desc["arg_names"][i];
-        known_defs[arg] = continuation->param(i);
+    thorin::Continuation* continuation = nullptr;
+
+    auto forward_decl = known_defs.find(desc["name"]);
+    if (forward_decl != known_defs.end()) {
+        continuation = forward_decl->second->as_nom<thorin::Continuation>();
+    } else {
+        auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
+        continuation = world_.continuation(fn_type);
     }
-    auto args = get_arglist(desc["app"]["args"]);
-    auto callee = get_def(desc["app"]["target"]);
-    continuation->jump(callee, args);
+    
+    if (desc.contains("arg_names")) {
+        for (size_t i = 0; i < desc["arg_names"].size(); ++i) {
+            auto arg = desc["arg_names"][i];
+            known_defs[arg] = continuation->param(i);
+        }
+    }
+
+    if (desc.contains("app")) {
+        auto args = get_arglist(desc["app"]["args"]);
+        auto callee = get_def(desc["app"]["target"]);
+        continuation->jump(callee, args);
+    }
+
     if (desc.contains("external")) {
         if (desc["external"].get<bool>()) {
             continuation->set_name(desc["name"]);
             world_.make_external(continuation);
         }
     }
+
     return continuation;
 }
 
@@ -87,6 +102,32 @@ const thorin::Def * IRBuilder::build_ArithOp (json desc) {
     assert(args.size() == 2);
 
     return world_.arithop(tag, args[0], args[1]);
+}
+
+thorin::CmpTag IRBuilder::resolve_cmp_tag (std::string cmp_tag) {
+    static const std::map<std::string, thorin::CmpTag> CmpTagMap {
+#define THORIN_CMP(OP) {#OP, thorin::CmpTag::Cmp_##OP},
+#include <thorin/tables/cmptable.h>
+    };
+
+    auto it = CmpTagMap.find(cmp_tag);
+    if (it != CmpTagMap.end())
+        return it->second;
+    else
+        return thorin::CmpTag::Cmp_eq;
+}
+
+const thorin::Def * IRBuilder::build_Cmp (json desc) {
+    auto args = get_arglist(desc["args"]);
+    auto tag = resolve_cmp_tag(desc["op"]);
+
+    assert(args.size() == 2);
+
+    return world_.cmp(tag, args[0], args[1]);
+}
+
+const thorin::Def * IRBuilder::build_Branch (json desc) {
+    return world_.branch();
 }
 
 const thorin::Def * IRBuilder::reconstruct_def(json desc) {
