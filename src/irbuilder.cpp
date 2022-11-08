@@ -67,9 +67,26 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
     return continuation;
 }
 
+thorin::ArithOpTag IRBuilder::resolve_arithop_tag (std::string arithop_tag) {
+    static const std::map<std::string, thorin::ArithOpTag> ArithOpMap {
+#define THORIN_ARITHOP(OP) {#OP, thorin::ArithOpTag::ArithOp_##OP},
+#include <thorin/tables/arithoptable.h>
+    };
+
+    auto it = ArithOpMap.find(arithop_tag);
+    if (it != ArithOpMap.end())
+        return it->second;
+    else
+        return thorin::ArithOpTag::ArithOp_add;
+}
+
 const thorin::Def * IRBuilder::build_ArithOp (json desc) {
-    auto type = typetable_.get_type(desc["type"]);
-    return nullptr;
+    auto args = get_arglist(desc["args"]);
+    auto tag = resolve_arithop_tag(desc["op"]);
+
+    assert(args.size() == 2);
+
+    return world_.arithop(tag, args[0], args[1]);
 }
 
 const thorin::Def * IRBuilder::reconstruct_def(json desc) {
