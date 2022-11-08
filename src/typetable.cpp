@@ -23,30 +23,11 @@ TypeTable::OptiType TypeTable::resolvetype (std::string type_name) {
         return OptiType::InvalidType;
 }
 
+
 thorin::PrimTypeTag TypeTable::resolvetag (std::string type_tag) {
     static const std::map<std::string, thorin::PrimTypeTag> TypeMap {
-        {"ps8", thorin::PrimTypeTag::PrimType_ps8},
-        {"ps16", thorin::PrimTypeTag::PrimType_ps16},
-        {"ps32", thorin::PrimTypeTag::PrimType_ps32},
-        {"ps64", thorin::PrimTypeTag::PrimType_ps64},
-        {"pu8", thorin::PrimTypeTag::PrimType_pu8},
-        {"pu16", thorin::PrimTypeTag::PrimType_pu16},
-        {"pu32", thorin::PrimTypeTag::PrimType_pu32},
-        {"pu64", thorin::PrimTypeTag::PrimType_pu64},
-        {"qs8", thorin::PrimTypeTag::PrimType_qs8},
-        {"qs16", thorin::PrimTypeTag::PrimType_qs16},
-        {"qs32", thorin::PrimTypeTag::PrimType_qs32},
-        {"qs64", thorin::PrimTypeTag::PrimType_qs64},
-        {"qu8", thorin::PrimTypeTag::PrimType_qu8},
-        {"qu16", thorin::PrimTypeTag::PrimType_qu16},
-        {"qu32", thorin::PrimTypeTag::PrimType_qu32},
-        {"qu64", thorin::PrimTypeTag::PrimType_qu64},
-        {"pf16", thorin::PrimTypeTag::PrimType_pf16},
-        {"pf32", thorin::PrimTypeTag::PrimType_pf32},
-        {"pf64", thorin::PrimTypeTag::PrimType_pf64},
-        {"qf16", thorin::PrimTypeTag::PrimType_qf16},
-        {"qf32", thorin::PrimTypeTag::PrimType_qf32},
-        {"qf64", thorin::PrimTypeTag::PrimType_qf64},
+#define THORIN_ALL_TYPE(T, M) {#T, thorin::PrimTypeTag::PrimType_##T},
+#include <thorin/tables/primtypetable.h>
     };
 
     auto it = TypeMap.find(type_tag);

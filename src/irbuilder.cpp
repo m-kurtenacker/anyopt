@@ -34,7 +34,6 @@ const thorin::Def * IRBuilder::reconstruct_def(json desc) {
     const thorin::Def* return_def = nullptr;
     switch (resolvedef(desc["type"])) {
     case DefType::Continuation: {
-        std::cerr << "Building continuation named " << desc["name"] << std::endl;
         auto fn_type = typetable_.get_type(desc["fn_type"].get<std::string>())->as<thorin::FnType>();
         thorin::Continuation* continuation = world_.continuation(fn_type);
         for (size_t i = 0; i < desc["arg_names"].size(); ++i) {
@@ -50,17 +49,21 @@ const thorin::Def * IRBuilder::reconstruct_def(json desc) {
                 world_.make_external(continuation);
             }
         }
-        continuation->dump();
         return_def = continuation;
         break;
     }
     case DefType::Constant: {
-        std::cerr << "Building constant named " << desc["name"] << std::endl;
         auto const_type = typetable_.get_type(desc["const_type"].get<std::string>());
         auto primtype = const_type->as<thorin::PrimType>();
-        thorin::Box value(desc["value"].get<thorin::s64>());
+        thorin::Box value;
+        switch (primtype->tag()) {
+#define THORIN_I_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box(desc["value"].get<thorin::M>()); break; }
+#define THORIN_BOOL_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box(desc["value"].get<M>()); break; }
+#define THORIN_F_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box(desc["value"].get<double>()); break; }
+#include <thorin/tables/primtypetable.h>
+        }
+        //thorin::Box value(desc["value"].get<thorin::s64>());
         const thorin::Def* literal = world_.literal(primtype->primtype_tag(), value, {}, primtype->length());
-        literal->dump();
         return_def = literal;
         break;
     }

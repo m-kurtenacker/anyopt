@@ -10,8 +10,6 @@
 #include<thorin/be/llvm/llvm.h>
 #include<thorin/be/llvm/cpu.h>
 
-#define DUMP_TYPE
-
 int main (int argc, char** argv) {
     assert(argc == 2 && "Exactly one argument needed for now.");
 
@@ -20,13 +18,14 @@ int main (int argc, char** argv) {
     std::ifstream json_input_file (filename);
     json data = json::parse(json_input_file);
 
+#ifdef DUMP
     std::cout << data["module"].get<std::string>() << std::endl;
 
     json test = data["defs"];
-
     for (auto t : test) {
         std::cout << t["name"].get<std::string>() << std::endl;
     }
+#endif
 
     thorin::World world(data["module"].get<std::string>());
 
@@ -34,7 +33,7 @@ int main (int argc, char** argv) {
 
     for (auto it : data["type_table"]) {
         const thorin::Type* type = table.reconstruct_type(it);
-#ifdef DUMP_TYPE
+#ifdef DUMP
         type->dump();
         if (auto nominaltype = type->isa<thorin::NominalType>()) {
             for (auto name : nominaltype->op_names()) {
@@ -55,7 +54,9 @@ int main (int argc, char** argv) {
         const thorin::Def* def = irbuilder.reconstruct_def(it);
     }
 
+#ifdef DUMP
     world.dump();
+#endif
 
     world.opt();
 
