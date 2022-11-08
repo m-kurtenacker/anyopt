@@ -42,7 +42,7 @@ thorin::Array<const thorin::Type*> TypeTable::get_arglist (json arg_list) {
     thorin::Array<const thorin::Type*> args(arg_list.size());
     for (int argnum = 0; argnum < arg_list.size(); ++argnum) {
         json arg_desc = arg_list[argnum];
-        args[argnum] = get_type(arg_desc.get<std::string>());
+        args[argnum] = get_type(arg_desc);
     }
 
     return args;
@@ -139,5 +139,5 @@ const thorin::Type * TypeTable::reconstruct_type(json desc) {
         std::cerr << "Type is invalid" << std::endl;
     }
     assert(return_type);
-    return known_types[desc["name"].get<std::string>()] = return_type;
+    return known_types[desc["name"]] = return_type;
 }

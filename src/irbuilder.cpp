@@ -21,7 +21,7 @@ thorin::Array<const thorin::Def*> IRBuilder::get_arglist (json arg_list) {
     thorin::Array<const thorin::Def*> args(arg_list.size());
     for (int argnum = 0; argnum < arg_list.size(); ++argnum) {
         json arg_desc = arg_list[argnum];
-        args[argnum] = get_def(arg_desc.get<std::string>());
+        args[argnum] = get_def(arg_desc);
     }
 
     return args;
@@ -34,7 +34,7 @@ const thorin::Def* IRBuilder::get_def (std::string type_name) {
 }
 
 const thorin::Def * IRBuilder::build_Constant (json desc) {
-    auto const_type = typetable_.get_type(desc["const_type"].get<std::string>());
+    auto const_type = typetable_.get_type(desc["const_type"]);
     auto primtype = const_type->as<thorin::PrimType>();
     thorin::Box value;
     switch (primtype->tag()) {
@@ -49,11 +49,11 @@ const thorin::Def * IRBuilder::build_Constant (json desc) {
 }
 
 const thorin::Def * IRBuilder::build_Continuation (json desc) {
-    auto fn_type = typetable_.get_type(desc["fn_type"].get<std::string>())->as<thorin::FnType>();
+    auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
     thorin::Continuation* continuation = world_.continuation(fn_type);
     for (size_t i = 0; i < desc["arg_names"].size(); ++i) {
         auto arg = desc["arg_names"][i];
-        known_defs[arg.get<std::string>()] = continuation->param(i);
+        known_defs[arg] = continuation->param(i);
     }
     auto args = get_arglist(desc["app"]["args"]);
     auto callee = get_def(desc["app"]["target"]);
@@ -68,6 +68,7 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
 }
 
 const thorin::Def * IRBuilder::build_ArithOp (json desc) {
+    auto type = typetable_.get_type(desc["type"]);
     return nullptr;
 }
 
@@ -80,5 +81,5 @@ const thorin::Def * IRBuilder::reconstruct_def(json desc) {
     default:
         std::cerr << "Def is invalid" << std::endl;
     }
-    return known_defs[desc["name"].get<std::string>()] = return_def;
+    return known_defs[desc["name"]] = return_def;
 }
