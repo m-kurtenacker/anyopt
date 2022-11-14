@@ -5,8 +5,6 @@ IRBuilder::DefType IRBuilder::resolvedef (std::string def_type) {
 #define MAP(NAME, CLASS) {NAME, DefType::CLASS},
         DefTypeEnum(MAP)
 #undef MAP
-        //{"continuation", DefType::Continuation},
-        //{"const", DefType::Constant},
     };
 
     auto it = TypeMap.find(def_type);
@@ -29,6 +27,8 @@ thorin::Array<const thorin::Def*> IRBuilder::get_arglist (json arg_list) {
 
 const thorin::Def* IRBuilder::get_def (std::string type_name) {
     auto it = known_defs.find(type_name);
+    if(it == known_defs.end())
+       std::cerr << "Unknown argument name: " << type_name << std::endl;
     assert(it != known_defs.end() && "Unknown argument name!");
     return it->second;
 }
@@ -55,8 +55,14 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
     if (forward_decl != known_defs.end()) {
         continuation = forward_decl->second->as_nom<thorin::Continuation>();
     } else {
-        auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
-        continuation = world_.continuation(fn_type);
+        if (desc.contains("intrinsic")) {
+            if (desc["intrinsic"].get<std::string>() == "branch") {
+                continuation = world_.branch();
+            }
+        } else {
+            auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
+            continuation = world_.continuation(fn_type);
+        }
     }
     
     if (desc.contains("arg_names")) {
@@ -77,6 +83,17 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
             continuation->set_name(desc["name"]);
             world_.make_external(continuation);
         }
+    }
+
+    if (desc.contains("intrinsic")) {
+        if (desc["intrinsic"].get<std::string>() == "branch") {
+            //pass
+        } else {
+            continuation->set_name(desc["intrinsic"]);
+            continuation->set_intrinsic();
+        }
+    } else {
+        continuation->set_name(desc["name"]);
     }
 
     return continuation;
@@ -104,6 +121,37 @@ const thorin::Def * IRBuilder::build_ArithOp (json desc) {
     return world_.arithop(tag, args[0], args[1]);
 }
 
+const thorin::Def * IRBuilder::build_LEA (json desc) {
+    auto args = get_arglist(desc["args"]);
+
+    assert(args.size() == 2);
+
+    return world_.lea(args[0], args[1], {});
+}
+
+const thorin::Def * IRBuilder::build_Load (json desc) {
+    auto args = get_arglist(desc["args"]);
+
+    assert(args.size() == 2);
+
+    return world_.load(args[0], args[1]);
+}
+
+const thorin::Def * IRBuilder::build_Extract (json desc) {
+    auto args = get_arglist(desc["args"]);
+
+    assert(args.size() == 2);
+
+    return world_.extract(args[0], args[1]);
+}
+
+const thorin::Def * IRBuilder::build_Cast (json desc) {
+    auto target_type = typetable_.get_type(desc["target_type"]);
+    auto source = get_def(desc["source"]);
+
+    return world_.cast(target_type, source);
+}
+
 thorin::CmpTag IRBuilder::resolve_cmp_tag (std::string cmp_tag) {
     static const std::map<std::string, thorin::CmpTag> CmpTagMap {
 #define THORIN_CMP(OP) {#OP, thorin::CmpTag::Cmp_##OP},
@@ -114,7 +162,7 @@ thorin::CmpTag IRBuilder::resolve_cmp_tag (std::string cmp_tag) {
     if (it != CmpTagMap.end())
         return it->second;
     else
-        return thorin::CmpTag::Cmp_eq;
+        assert(false);
 }
 
 const thorin::Def * IRBuilder::build_Cmp (json desc) {
@@ -124,10 +172,6 @@ const thorin::Def * IRBuilder::build_Cmp (json desc) {
     assert(args.size() == 2);
 
     return world_.cmp(tag, args[0], args[1]);
-}
-
-const thorin::Def * IRBuilder::build_Branch (json desc) {
-    return world_.branch();
 }
 
 const thorin::Def * IRBuilder::reconstruct_def(json desc) {

@@ -6,6 +6,9 @@ N("arithop", ArithOp) \
 N("continuation", Continuation) \
 N("const", Constant) \
 N("cmp", Cmp) \
-N("branch", Branch) \
+N("lea", LEA) \
+N("load", Load) \
+N("extract", Extract) \
+N("cast", Cast) \
 
 #endif

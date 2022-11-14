@@ -51,7 +51,13 @@ int main (int argc, char** argv) {
     IRBuilder irbuilder(world, table);
 
     for (auto it : data["defs"]) {
+#ifdef DUMP
+        std::cerr << "Reconst of " << it["name"]  << ":" << std::endl;
+#endif
         const thorin::Def* def = irbuilder.reconstruct_def(it);
+#ifdef DUMP
+        def->dump();
+#endif
     }
 
 #ifdef DUMP

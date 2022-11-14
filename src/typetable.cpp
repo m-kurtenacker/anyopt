@@ -50,6 +50,8 @@ thorin::Array<const thorin::Type*> TypeTable::get_arglist (json arg_list) {
 
 const thorin::Type* TypeTable::get_type (std::string type_name) {
     auto it = known_types.find(type_name);
+    if (it == known_types.end())
+        std::cerr << "Unknown argument type: " << type_name << std::endl;
     assert(it != known_types.end() && "Unknown argument type!");
     return it->second;
 }
@@ -137,6 +139,7 @@ const thorin::Type * TypeTable::reconstruct_type(json desc) {
     }
     default:
         std::cerr << "Type is invalid" << std::endl;
+        std::cerr << desc["name"] << std::endl;
     }
     assert(return_type);
     return known_types[desc["name"]] = return_type;
