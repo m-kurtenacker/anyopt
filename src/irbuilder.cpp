@@ -174,6 +174,39 @@ const thorin::Def * IRBuilder::build_Cmp (json desc) {
     return world_.cmp(tag, args[0], args[1]);
 }
 
+const thorin::Def * IRBuilder::build_Run (json desc) {
+    auto target = get_def(desc["target"]);
+
+    return world_.run(target);
+}
+
+const thorin::Def * IRBuilder::build_Hlt (json desc) {
+    auto target = get_def(desc["target"]);
+
+    return world_.hlt(target);
+}
+
+const thorin::Def * IRBuilder::build_Store (json desc) {
+    auto args = get_arglist(desc["args"]);
+
+    assert(args.size() == 3);
+
+    return world_.store(args[0], args[1], args[2]);
+}
+
+const thorin::Def * IRBuilder::build_Enter (json desc) {
+    auto mem = get_def(desc["mem"]);
+
+    return world_.enter(mem);
+}
+
+const thorin::Def * IRBuilder::build_Slot (json desc) {
+    auto target_type = typetable_.get_type(desc["target_type"]);
+    auto frame = get_def(desc["frame"]);
+
+    return world_.slot(target_type, frame);
+}
+
 const thorin::Def * IRBuilder::reconstruct_def(json desc) {
     const thorin::Def* return_def = nullptr;
     switch (resolvedef(desc["type"])) {
