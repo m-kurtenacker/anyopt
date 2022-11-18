@@ -1,8 +1,9 @@
-#ifndef TABLES_DEFTYPE_H
-#define TABLES_DEFTYPE_H
+#ifndef TABLES_DEFTABLE_H
+#define TABLES_DEFTABLE_H
 
 #define DefTypeEnum(N) \
 N("arithop", ArithOp) \
+N("mathop", MathOp) \
 N("continuation", Continuation) \
 N("const", Constant) \
 N("top", Top) \
@@ -32,5 +33,9 @@ N("sizeof", Sizeof) \
 N("alignof", Alignof) \
 N("select", Select) \
 N("filter", Filter) \
+N("variant", Variant) \
+N("variant_extract", VariantExtract) \
+N("variant_index", VariantIndex) \
+N("assembly", Assembly) \
 
 #endif

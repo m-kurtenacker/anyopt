@@ -3,7 +3,7 @@
 
 #include "typetable.h"
 
-#include "tables/deftype.h"
+#include "tables/deftable.h"
 
 #include<thorin/world.h>
 #include<nlohmann/json.hpp>
@@ -29,11 +29,11 @@ private:
 
     DefType resolvedef (std::string def_type);
     thorin::ArithOpTag resolve_arithop_tag (std::string arithop_tag);
+    thorin::MathOpTag resolve_mathop_tag (std::string mathop_tag);
     thorin::CmpTag resolve_cmp_tag (std::string cmp_tag);
 
     thorin::Array<const thorin::Def*> get_arglist (json arg_list);
 
-    //const thorin::Def* build_Constant (json desc);
 #define CreateFunction(NAME, CLASS) const thorin::Def* build_##CLASS (json desc);
     DefTypeEnum(CreateFunction)
 #undef CreateFunction

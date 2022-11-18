@@ -2,25 +2,17 @@
 
 TypeTable::OptiType TypeTable::resolvetype (std::string type_name) {
     static const std::map<std::string, OptiType> TypeMap {
-        {"def_array", OptiType::DefiniteArrayType},
-        {"indef_array", OptiType::IndefiniteArrayType},
-        {"bottom", OptiType::BottomType},
-        {"fn", OptiType::FnType},
-        {"cl", OptiType::ClosureType},
-        {"frame", OptiType::FrameType},
-        {"mem", OptiType::MemType},
-        {"struct", OptiType::StructType},
-        {"variant", OptiType::VariantType},
-        {"tuple", OptiType::TupleType},
-        {"prim", OptiType::PrimType},
-        {"ptr", OptiType::PtrType},
+#define MAP(NAME, CLASS) {NAME, OptiType::CLASS},
+        TypeTableEnum(MAP)
+#undef MAP
     };
 
     auto it = TypeMap.find(type_name);
     if (it != TypeMap.end())
         return it->second;
     else
-        return OptiType::InvalidType;
+        std::cerr << "Unknown type: " << type_name << std::endl;
+        assert(false);
 }
 
 
@@ -56,45 +48,43 @@ const thorin::Type* TypeTable::get_type (std::string type_name) {
     return it->second;
 }
 
-const thorin::Type * TypeTable::reconstruct_type(json desc) {
-    const thorin::Type* return_type = nullptr;
-    switch (resolvetype(desc["type"])) {
-    case OptiType::DefiniteArrayType: {
+const thorin::Type * TypeTable::build_DefiniteArrayType(json desc) {
         auto args = get_arglist(desc["args"]);
         assert(args.size() == 1);
         size_t length = desc["length"].get<size_t>();
-        return_type = world_.definite_array_type(args[0], length);
-        break;
-    }
-    case OptiType::IndefiniteArrayType: {
+        return world_.definite_array_type(args[0], length);
+}
+
+const thorin::Type * TypeTable::build_IndefiniteArrayType(json desc) {
         auto args = get_arglist(desc["args"]);
         assert(args.size() == 1);
-        return_type = world_.indefinite_array_type(args[0]);
-        break;
-    }
-    case OptiType::BottomType: {
-        return_type = world_.bottom_type();
-        break;
-    }
-    case OptiType::FnType: {
+        return world_.indefinite_array_type(args[0]);
+}
+
+const thorin::Type * TypeTable::build_BottomType(json desc) {
+        return world_.bottom_type();
+}
+
+const thorin::Type * TypeTable::build_FnType(json desc) {
         auto args = get_arglist(desc["args"]);
-        return_type = world_.fn_type(args);
-        break;
-    }
-    case OptiType::ClosureType: {
+        return world_.fn_type(args);
+}
+
+const thorin::Type * TypeTable::build_ClosureType(json desc) {
         auto args = get_arglist(desc["args"]);
-        return_type = world_.closure_type(args);
-        break;
-    }
-    case OptiType::FrameType: {
-        return_type = world_.bottom_type();
-        break;
-    }
-    case OptiType::MemType: {
-        return_type = world_.mem_type();
-        break;
-    }
-    case OptiType::StructType: { //TODO: nominal type forward declarations are not supported right now.
+        return world_.closure_type(args);
+}
+
+const thorin::Type * TypeTable::build_FrameType(json desc) {
+        return world_.bottom_type();
+}
+
+const thorin::Type * TypeTable::build_MemType(json desc) {
+        return world_.mem_type();
+}
+
+const thorin::Type * TypeTable::build_StructType(json desc) {
+        //TODO: nominal type forward declarations are not supported right now.
         auto args = get_arglist(desc["args"]);
         auto name = desc["struct_name"].get<std::string>();
         auto struct_type = world_.struct_type(name, args.size());
@@ -103,10 +93,10 @@ const thorin::Type * TypeTable::reconstruct_type(json desc) {
             struct_type->set(i, args[i]);
             struct_type->set_op_name(i, arg_name);
         }
-        return_type = struct_type;
-        break;
-    }
-    case OptiType::VariantType: {
+        return struct_type;
+}
+
+const thorin::Type * TypeTable::build_VariantType(json desc) {
         auto args = get_arglist(desc["args"]);
         auto name = desc["variant_name"].get<std::string>();
         auto variant_type = world_.variant_type(name, args.size());
@@ -115,28 +105,34 @@ const thorin::Type * TypeTable::reconstruct_type(json desc) {
             variant_type->set(i, args[i]);
             variant_type->set_op_name(i, arg_name);
         }
-        return_type = variant_type;
-        break;
-    }
-    case OptiType::TupleType: {
+        return variant_type;
+}
+
+const thorin::Type * TypeTable::build_TupleType(json desc) {
         auto args = get_arglist(desc["args"]);
-        return_type = world_.tuple_type(args);
-        break;
-    }
-    case OptiType::PrimType : {
+        return world_.tuple_type(args);
+}
+
+const thorin::Type * TypeTable::build_PrimType(json desc) {
         auto tag = resolvetag(desc["tag"]);
         size_t length = desc["length"].get<size_t>();
-        return_type = world_.prim_type(tag, length);
-        break;
-    }
-    case OptiType::PtrType: {
+        return world_.prim_type(tag, length);
+}
+
+const thorin::Type * TypeTable::build_PtrType(json desc) {
         auto args = get_arglist(desc["args"]);
         assert(args.size() == 1);
         size_t length = desc["length"].get<size_t>();
         //TODO: device, addrspace
-        return_type = world_.ptr_type(args[0], length);
-        break;
-    }
+        return world_.ptr_type(args[0], length);
+}
+
+const thorin::Type * TypeTable::reconstruct_type(json desc) {
+    const thorin::Type* return_type = nullptr;
+    switch (resolvetype(desc["type"])) {
+#define CASE(NAME, CLASS) case OptiType::CLASS: { return_type = build_##CLASS(desc); break; }
+    TypeTableEnum(CASE)
+#undef CASE
     default:
         std::cerr << "Type is invalid" << std::endl;
         std::cerr << desc["name"] << std::endl;

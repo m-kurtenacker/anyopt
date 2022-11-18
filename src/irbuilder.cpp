@@ -44,7 +44,7 @@ const thorin::Def * IRBuilder::build_Constant (json desc) {
     switch (primtype->tag()) {
 #define THORIN_I_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box(desc["value"].get<thorin::M>()); break; }
 #define THORIN_BOOL_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box(desc["value"].get<M>()); break; }
-#define THORIN_F_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box(desc["value"].get<double>()); break; }
+#define THORIN_F_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box((thorin::M)desc["value"].get<double>()); break; }
 #include <thorin/tables/primtypetable.h>
     default:
         assert(false && "not implemented");
@@ -114,6 +114,12 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
         if (desc.contains("intrinsic")) {
             if (desc["intrinsic"].get<std::string>() == "branch") {
                 continuation = world_.branch();
+            } else if (desc["intrinsic"].get<std::string>() == "match") {
+                auto variant_type = typetable_.get_type(desc["variant_type"]);
+                size_t num_patterns = desc["num_patterns"];
+                continuation = world_.match(variant_type, num_patterns);
+            } else {
+                assert(false);
             }
         } else {
             auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
@@ -165,7 +171,7 @@ thorin::ArithOpTag IRBuilder::resolve_arithop_tag (std::string arithop_tag) {
     if (it != ArithOpMap.end())
         return it->second;
     else
-        return thorin::ArithOpTag::ArithOp_add;
+        assert(false);
 }
 
 const thorin::Def * IRBuilder::build_ArithOp (json desc) {
@@ -175,6 +181,26 @@ const thorin::Def * IRBuilder::build_ArithOp (json desc) {
     assert(args.size() == 2);
 
     return world_.arithop(tag, args[0], args[1]);
+}
+
+thorin::MathOpTag IRBuilder::resolve_mathop_tag (std::string mathop_tag) {
+    static const std::map<std::string, thorin::MathOpTag> MathOpMap {
+#define THORIN_MATHOP(OP) {#OP, thorin::MathOpTag::MathOp_##OP},
+#include <thorin/tables/mathoptable.h>
+    };
+
+    auto it = MathOpMap.find(mathop_tag);
+    if (it != MathOpMap.end())
+        return it->second;
+    else
+        assert(false);
+}
+
+const thorin::Def * IRBuilder::build_MathOp (json desc) {
+    auto args = get_arglist(desc["args"]);
+    auto tag = resolve_mathop_tag(desc["op"]);
+
+    return world_.mathop(tag, args);
 }
 
 const thorin::Def * IRBuilder::build_LEA (json desc) {
@@ -333,6 +359,64 @@ const thorin::Def * IRBuilder::build_Filter (json desc) {
     return world_.filter(args);
 }
 
+const thorin::Def * IRBuilder::build_Variant (json desc) {
+    auto variant_type = typetable_.get_type(desc["variant_type"])->as<thorin::VariantType>();
+    auto value = get_def(desc["value"]);
+    size_t index = desc["index"];
+
+    return world_.variant(variant_type, value, index);
+}
+
+const thorin::Def * IRBuilder::build_Assembly (json desc) {
+    auto asm_type = typetable_.get_type(desc["asm_type"]);
+    auto inputs = get_arglist(desc["inputs"]);
+    std::string asm_template = desc["asm_template"];
+
+    thorin::Array<std::string> out_constraints(desc["output_constraints"].size());
+    for (size_t i = 0; i < desc["output_constraints"].size(); ++i) {
+        out_constraints[i] = desc["output_constraints"][i];
+    }
+    thorin::Array<std::string> in_constraints(desc["input_constraints"].size());
+    for (size_t i = 0; i < desc["input_constraints"].size(); ++i) {
+        in_constraints[i] = desc["input_constraints"][i];
+    }
+    thorin::Array<std::string> clobbers(desc["clobbers"].size());
+    for (size_t i = 0; i < desc["clobbers"].size(); ++i) {
+        clobbers[i] = desc["clobbers"][i];
+    }
+
+    static const std::map<std::string, thorin::Assembly::Flags> FlagsMap {
+        {"noflag", thorin::Assembly::Flags::NoFlag},
+        {"hassideeffects", thorin::Assembly::Flags::HasSideEffects},
+        {"isalignstack", thorin::Assembly::Flags::IsAlignStack},
+        {"isinteldialect", thorin::Assembly::Flags::IsIntelDialect}
+    };
+
+    auto flags = thorin::Assembly::Flags::NoFlag;
+    auto it = FlagsMap.find(desc["flags"]);
+    if (it != FlagsMap.end())
+        flags = it->second;
+    else {
+        std::cerr << "Unknown flag type: " << desc["flags"] << std::endl;
+        assert(false);
+    }
+
+    return world_.assembly(asm_type, inputs, asm_template, out_constraints, in_constraints, clobbers, flags);
+}
+
+const thorin::Def * IRBuilder::build_VariantExtract (json desc) {
+    auto value = get_def(desc["value"]);
+    size_t index = desc["index"];
+
+    return world_.variant_extract(value, index);
+}
+
+const thorin::Def * IRBuilder::build_VariantIndex (json desc) {
+    auto value = get_def(desc["value"]);
+
+    return world_.variant_index(value);
+}
+
 const thorin::Def * IRBuilder::reconstruct_def(json desc) {
     const thorin::Def* return_def = nullptr;
     switch (resolvedef(desc["type"])) {
@@ -341,6 +425,8 @@ const thorin::Def * IRBuilder::reconstruct_def(json desc) {
 #undef CASE
     default:
         std::cerr << "Def is invalid" << std::endl;
+        std::cerr << desc["name"] << std::endl;
     }
+    assert(return_def);
     return known_defs[desc["name"]] = return_def;
 }
