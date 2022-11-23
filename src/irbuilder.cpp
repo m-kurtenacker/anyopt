@@ -119,12 +119,18 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
                 size_t num_patterns = desc["num_patterns"];
                 continuation = world_.match(variant_type, num_patterns);
             } else {
-                assert(false);
+                auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
+                continuation = world_.continuation(fn_type);
             }
         } else {
             auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
             continuation = world_.continuation(fn_type);
         }
+    }
+
+    if (desc.contains("filter")) {
+        auto filter = get_def(desc["filter"])->as<thorin::Filter>();
+        continuation->set_filter(filter);
     }
     
     if (desc.contains("arg_names")) {
@@ -134,28 +140,24 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
         }
     }
 
+    if (desc.contains("external")) {
+        continuation->set_name(desc["external"]);
+        world_.make_external(continuation);
+    }
+
     if (desc.contains("app")) {
         auto args = get_arglist(desc["app"]["args"]);
         auto callee = get_def(desc["app"]["target"]);
         continuation->jump(callee, args);
     }
 
-    if (desc.contains("external")) {
-        if (desc["external"].get<bool>()) {
-            continuation->set_name(desc["name"]);
-            world_.make_external(continuation);
-        }
-    }
-
     if (desc.contains("intrinsic")) {
-        if (desc["intrinsic"].get<std::string>() == "branch") {
+        if (desc["intrinsic"].get<std::string>() == "branch" || desc["intrinsic"].get<std::string>() == "match") {
             //pass
         } else {
             continuation->set_name(desc["intrinsic"]);
             continuation->set_intrinsic();
         }
-    } else {
-        continuation->set_name(desc["name"]);
     }
 
     return continuation;
