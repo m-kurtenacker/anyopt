@@ -10,9 +10,10 @@ TypeTable::OptiType TypeTable::resolvetype (std::string type_name) {
     auto it = TypeMap.find(type_name);
     if (it != TypeMap.end())
         return it->second;
-    else
+    else {
         std::cerr << "Unknown type: " << type_name << std::endl;
         assert(false);
+    }
 }
 
 
@@ -25,8 +26,26 @@ thorin::PrimTypeTag TypeTable::resolvetag (std::string type_tag) {
     auto it = TypeMap.find(type_tag);
     if (it != TypeMap.end())
         return it->second;
-    else
-        return thorin::PrimTypeTag::PrimType_bool;
+    else {
+        std::cerr << "Unknown primtypetag: " << type_tag << std::endl;
+        assert(false);
+    }
+}
+
+thorin::AddrSpace TypeTable::resolveaddrspace (std::string addr_space) {
+    static const std::map<std::string, thorin::AddrSpace> AddrSpaceMap {
+#define MAP(NAME, CLASS) {NAME, thorin::AddrSpace::CLASS},
+        AddrSpaceEnum(MAP)
+#undef MAP
+    };
+
+    auto it = AddrSpaceMap.find(addr_space);
+    if (it != AddrSpaceMap.end())
+        return it->second;
+    else {
+        std::cerr << "Unknown addrspace: " << addr_space << std::endl;
+        assert(false);
+    }
 }
 
 thorin::Array<const thorin::Type*> TypeTable::get_arglist (json arg_list) {
@@ -123,8 +142,15 @@ const thorin::Type * TypeTable::build_PtrType(json desc) {
         auto args = get_arglist(desc["args"]);
         assert(args.size() == 1);
         size_t length = desc["length"].get<size_t>();
-        //TODO: device, addrspace
-        return world_.ptr_type(args[0], length);
+        int32_t device = -1;
+        if (desc.contains("device"))
+            device = desc["device"];
+        auto addrspace = thorin::AddrSpace::Generic;
+        if (desc.contains("addrspace")) {
+            addrspace = resolveaddrspace(desc["addrspace"]);
+        }
+
+        return world_.ptr_type(args[0], length, device, addrspace);
 }
 
 const thorin::Type * TypeTable::reconstruct_type(json desc) {

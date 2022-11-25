@@ -26,6 +26,7 @@ private:
 
     OptiType resolvetype (std::string type_name);
     thorin::PrimTypeTag resolvetag (std::string type_tag);
+    thorin::AddrSpace resolveaddrspace (std::string addr_space);
     thorin::Array<const thorin::Type*> get_arglist (json arg_list);
 
 #define CreateFunction(NAME, CLASS) const thorin::Type* build_##CLASS (json desc);

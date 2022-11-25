@@ -15,4 +15,11 @@ N("tuple", TupleType) \
 N("prim", PrimType) \
 N("ptr", PtrType) \
 
+#define AddrSpaceEnum(N) \
+N("generic", Generic) \
+N("global", Global) \
+N("texture", Texture) \
+N("shared", Shared) \
+N("constant", Constant) \
+
 #endif
