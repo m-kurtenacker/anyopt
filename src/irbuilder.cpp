@@ -145,6 +145,10 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
         world_.make_external(continuation);
     }
 
+    if (desc.contains("device")) {
+        continuation->set_name(desc["device"]);
+    }
+
     if (desc.contains("app")) {
         auto args = get_arglist(desc["app"]["args"]);
         auto callee = get_def(desc["app"]["target"]);

@@ -10,11 +10,55 @@
 #include<thorin/be/llvm/llvm.h>
 #include<thorin/be/llvm/cpu.h>
 
+#include<thorin/be/c/c.h>
 #include<thorin/be/json/json.h>
 
 #include<thorin/transform/partial_evaluation.h>
 
-//#define DUMP
+static void usage() {
+    std::cout << "usage: anyopt [options] files...\n"
+                "options:\n"
+                "  -h     --help                 Displays this message\n"
+                "         --version              Displays the version number\n"
+                "         --no-color             Disables colors in error messages\n"
+                "         --emit-thorin          Prints the Thorin IR after code generation\n"
+                "         --emit-json            Emits Thorin IR in the output file\n"
+                "         --emit-c-interface     Emits C interface for exported functions and imported types\n"
+                "         --log-level <lvl>      Changes the log level in Thorin (lvl = debug, verbose, info, warn, or error, defaults to error)\n"
+                "         --tab-width <n>        Sets the width of the TAB character in error messages or when printing the AST (in spaces, defaults to 2)\n"
+                "         --emit-c               Emits C code in the output file\n"
+                "         --emit-llvm            Emits LLVM IR in the output file\n"
+                "  -On                           Sets the optimization level (n = 0, 1, 2, or 3, defaults to 0)\n"
+                "  -o <name>                     Sets the module name (defaults to the first file name without its extension)\n"
+                ;
+}
+
+static void version() {
+    static const char day[] = { __DATE__[4] == ' ' ? '0' : __DATE__[4], __DATE__[5], 0 };
+    static const char* month =
+        (__DATE__[0] == 'J' && __DATE__[1] == 'a' && __DATE__[2] == 'n') ? "01" :
+        (__DATE__[0] == 'F' && __DATE__[1] == 'e' && __DATE__[2] == 'b') ? "02" :
+        (__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'r') ? "03" :
+        (__DATE__[0] == 'A' && __DATE__[1] == 'p' && __DATE__[2] == 'r') ? "04" :
+        (__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'y') ? "05" :
+        (__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'n') ? "06" :
+        (__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'l') ? "07" :
+        (__DATE__[0] == 'A' && __DATE__[1] == 'u' && __DATE__[2] == 'g') ? "08" :
+        (__DATE__[0] == 'S' && __DATE__[1] == 'e' && __DATE__[2] == 'p') ? "09" :
+        (__DATE__[0] == 'O' && __DATE__[1] == 'c' && __DATE__[2] == 't') ? "10" :
+        (__DATE__[0] == 'N' && __DATE__[1] == 'o' && __DATE__[2] == 'v') ? "11" :
+        (__DATE__[0] == 'D' && __DATE__[1] == 'e' && __DATE__[2] == 'c') ? "12" :
+        "??";
+    static const char year[] = { __DATE__[7], __DATE__[8], __DATE__[9], __DATE__[10], 0 };
+#ifdef NDEBUG
+    static const char* build = "Release";
+#else
+    static const char* build = "Debug";
+#endif
+    std::cout << "anyopt " << ANYOPT_VERSION_MAJOR << "." << ANYOPT_VERSION_MINOR << " "
+             << year << "-" << month << "-" << day
+             <<  " (" << build << ")\n";
+}
 
 struct ProgramOptions {
     std::vector<std::string> files;
@@ -63,9 +107,11 @@ struct ProgramOptions {
         for (int i = 1; i < argc; i++) {
             if (argv[i][0] == '-') {
                 if (matches(argv[i], "-h", "--help")) {
+                    usage();
                     exit = true;
                     return true;
                 } else if (matches(argv[i], "--version")) {
+                    version();
                     exit = true;
                     return true;
                 } else if (matches(argv[i], "--no-color")) {
@@ -81,12 +127,6 @@ struct ProgramOptions {
                     if (max_errors == 0) {
                         return false;
                     }
-                } else if (matches(argv[i], "-g", "--debug")) {
-                    debug = true;
-                } else if (matches(argv[i], "--print-ast")) {
-                    print_ast = true;
-                } else if (matches(argv[i], "--show-implicit-casts")) {
-                    show_implicit_casts = true;
                 } else if (matches(argv[i], "--emit-thorin")) {
                     emit_thorin = true;
                 } else if (matches(argv[i], "--emit-json")) {
@@ -160,89 +200,99 @@ struct ProgramOptions {
 
 int main (int argc, char** argv) {
     ProgramOptions opts;
-    opts.parse(argc, argv);
+    if (!opts.parse(argc, argv))
+        return EXIT_FAILURE;
+    if (opts.exit)
+        return EXIT_SUCCESS;
 
     auto filename = opts.files[0];
 
     std::ifstream json_input_file (filename);
     json data = json::parse(json_input_file);
 
-#ifdef DUMP
-    std::cout << data["module"].get<std::string>() << std::endl;
-
-    json test = data["defs"];
-    for (auto t : test) {
-        std::cout << t["name"].get<std::string>() << std::endl;
+    if (data.contains("host_triple")) {
+        if (opts.host_triple != "") {
+            opts.host_cpu = data["host_triple"];
+        } else if (opts.host_triple != data["host_triple"]) {
+            std::cerr << "Warning: Supplied host triple is different from the one in " << filename << std::endl;
+        }
     }
-#endif
+    if (data.contains("host_cpu")) {
+        if (opts.host_cpu != "") {
+            opts.host_cpu = data["host_cpu"];
+        } else if (opts.host_cpu != data["host_cpu"]) {
+            std::cerr << "Warning: Supplied host cpu is different from the one in " << filename << std::endl;
+        }
+    }
+    if (data.contains("host_attr")) {
+        if (opts.host_attr != "") {
+            opts.host_cpu = data["host_attr"];
+        } else if (opts.host_attr != data["host_attr"]) {
+            std::cerr << "Warning: Supplied host attributes is different from the one in " << filename << std::endl;
+        }
+    }
 
-    thorin::World world(data["module"].get<std::string>());
+    if (opts.module_name == "")
+        opts.module_name = data["module"].get<std::string>();
+
+    thorin::World world(opts.module_name);
+    world.set(opts.log_level);
+    world.set(std::make_shared<thorin::Stream>(std::cerr));
 
     TypeTable table(world);
-
-    for (auto it : data["type_table"]) {
-        const thorin::Type* type = table.reconstruct_type(it);
-#ifdef DUMP
-        type->dump();
-        if (auto nominaltype = type->isa<thorin::NominalType>()) {
-            for (auto name : nominaltype->op_names()) {
-                std::cout << " " << name;
-            }
-            std::cout << std::endl;
-            for (auto op : nominaltype->ops()) {
-                op->dump();
-            }
-            std::cout << "Nominaltype End" << std::endl;
-        }
-#endif
-    }
+    for (auto it : data["type_table"])
+        table.reconstruct_type(it);
 
     IRBuilder irbuilder(world, table);
+    for (auto it : data["defs"])
+        irbuilder.reconstruct_def(it);
 
-    for (auto it : data["defs"]) {
-#ifdef DUMP
-        std::cerr << "Reconst of " << it["name"]  << ":" << std::endl;
-#endif
-        const thorin::Def* def = irbuilder.reconstruct_def(it);
-#ifdef DUMP
-        def->dump();
-#endif
-    }
 
-#ifdef DUMP
-    world.dump();
-#endif
-
-    if (opts.emit_thorin) {
+    if (opts.opt_level == 1)
         world.cleanup();
-        world.dump();
-    }
-
-    auto emit_to_file = [&] (thorin::CodeGen& cg) {
-        auto name = data["module"].get<std::string>() + cg.file_ext();
-
+    if (opts.emit_c_int) {
+        auto name = opts.module_name + ".h";
         std::ofstream file(name);
-        assert(file);
-
-        cg.emit_stream(file);
-    };
-
-    if (opts.emit_llvm) {
-        world.opt();
-
-        std::string a = "";
-        std::string b = "";
-        std::string c = "";
-        thorin::llvm::CPUCodeGen cg(world, 0, "", a, b, c);
-
-        emit_to_file(cg);
+        if (!file)
+            std::cerr << "cannot open '" << name << "' for writing" << std::endl;
+        else {
+            thorin::Stream stream(file);
+            thorin::c::emit_c_int(world, stream);
+        }
     }
-
-    if (opts.emit_json) {
-        thorin::Cont2Config kernel_configs;
-        thorin::json::CodeGen cg(world, kernel_configs, false);
-
-        emit_to_file(cg);
+    if (opts.opt_level > 1 || opts.emit_c || opts.emit_llvm)
+        world.opt();
+    if (opts.emit_thorin)
+        world.dump();
+    if (opts.emit_json || opts.emit_c || opts.emit_llvm) {
+        thorin::DeviceBackends backends(world, opts.opt_level, opts.debug, opts.hls_flags);
+        auto emit_to_file = [&] (thorin::CodeGen& cg) {
+            auto name = opts.module_name + cg.file_ext();
+            std::ofstream file(name);
+            if (!file)
+                std::cerr << "cannot open '" << name << "' for writing" << std::endl;
+            else
+                cg.emit_stream(file);
+        };
+        if (opts.emit_c) {
+            thorin::Cont2Config kernel_configs;
+            thorin::c::CodeGen cg(world, kernel_configs, thorin::c::Lang::C99, opts.debug, opts.hls_flags);
+            emit_to_file(cg);
+        }
+        if (opts.emit_json) {
+            thorin::json::CodeGen cg(world, opts.debug, opts.host_triple, opts.host_cpu, opts.host_attr);
+            emit_to_file(cg);
+        }
+        if (opts.emit_llvm) {
+            thorin::llvm::CPUCodeGen cg(world, opts.opt_level, opts.debug, opts.host_triple, opts.host_cpu, opts.host_attr);
+            emit_to_file(cg);
+        }
+        for (auto& cg : backends.cgs) {
+            if (cg) {
+                std::cerr << "AnyOpt Codegen " << cg->file_ext() << std::endl;
+                emit_to_file(*cg);
+            }
+        }
     }
 
     return 0;
