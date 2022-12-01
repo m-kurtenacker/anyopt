@@ -1,6 +1,7 @@
 #include "main.h"
 #include "typetable.h"
 #include "irbuilder.h"
+#include "tables/optpasses.h"
 
 #include<iostream>
 #include<fstream>
@@ -13,7 +14,17 @@
 #include<thorin/be/c/c.h>
 #include<thorin/be/json/json.h>
 
+#include<thorin/transform/cleanup_world.h>
+#include<thorin/transform/clone_bodies.h>
+#include<thorin/transform/closure_conversion.h>
+#include<thorin/transform/codegen_prepare.h>
+#include<thorin/transform/dead_load_opt.h>
+#include<thorin/transform/flatten_tuples.h>
+#include<thorin/transform/hoist_enters.h>
+#include<thorin/transform/inliner.h>
+#include<thorin/transform/lift_builtins.h>
 #include<thorin/transform/partial_evaluation.h>
+#include<thorin/transform/split_slots.h>
 
 static void usage() {
     std::cout << "usage: anyopt [options] files...\n"
@@ -29,6 +40,7 @@ static void usage() {
                 "         --emit-c               Emits C code in the output file\n"
                 "         --emit-llvm            Emits LLVM IR in the output file\n"
                 "  -On                           Sets the optimization level (n = 0, 1, 2, or 3, defaults to 0)\n"
+                "         --pass                 Manually supply passes that are going to be executed\n"
                 "  -o <name>                     Sets the module name (defaults to the first file name without its extension)\n"
                 ;
 }
@@ -60,8 +72,15 @@ static void version() {
              <<  " (" << build << ")\n";
 }
 
+enum OptimizerPass {
+#define MAP(CLASS, ALIAS) CLASS,
+OptPassesEnum(MAP)
+#undef MAP
+};
+
 struct ProgramOptions {
     std::vector<std::string> files;
+    std::vector<OptimizerPass> optimizer_passes;
     std::string module_name;
     bool exit = false;
     bool no_color = false;
@@ -151,6 +170,18 @@ struct ProgramOptions {
                     else {
                         return false;
                     }
+                } else if (matches(argv[i], "--pass")) {
+                    if (!check_arg(argc, argv, i))
+                        return false;
+                    i++;
+                    using namespace std::string_literals;
+                    if (false) {}
+#define MAP(CLASS, ALIAS) else if (argv[i] == #ALIAS##s) { optimizer_passes.push_back(CLASS); }
+                    OptPassesEnum(MAP)
+#undef MAP
+                    else {
+                        return false;
+                    }
                 } else if (matches(argv[i], "--tab-width")) {
                     if (!check_arg(argc, argv, i))
                         return false;
@@ -198,6 +229,10 @@ struct ProgramOptions {
     }
 };
 
+void pe (thorin::World& world) {
+    while(partial_evaluation(world, true));
+}
+
 int main (int argc, char** argv) {
     ProgramOptions opts;
     if (!opts.parse(argc, argv))
@@ -205,50 +240,71 @@ int main (int argc, char** argv) {
     if (opts.exit)
         return EXIT_SUCCESS;
 
-    auto filename = opts.files[0];
-
-    std::ifstream json_input_file (filename);
-    json data = json::parse(json_input_file);
-
-    if (data.contains("host_triple")) {
-        if (opts.host_triple != "") {
-            opts.host_cpu = data["host_triple"];
-        } else if (opts.host_triple != data["host_triple"]) {
-            std::cerr << "Warning: Supplied host triple is different from the one in " << filename << std::endl;
-        }
-    }
-    if (data.contains("host_cpu")) {
-        if (opts.host_cpu != "") {
-            opts.host_cpu = data["host_cpu"];
-        } else if (opts.host_cpu != data["host_cpu"]) {
-            std::cerr << "Warning: Supplied host cpu is different from the one in " << filename << std::endl;
-        }
-    }
-    if (data.contains("host_attr")) {
-        if (opts.host_attr != "") {
-            opts.host_cpu = data["host_attr"];
-        } else if (opts.host_attr != data["host_attr"]) {
-            std::cerr << "Warning: Supplied host attributes is different from the one in " << filename << std::endl;
-        }
+    if (opts.files.empty()) {
+        std::cerr << "no input files" << std::endl;
+        return EXIT_FAILURE;
     }
 
-    if (opts.module_name == "")
+    if (opts.module_name == "") {
+        std::ifstream json_input_file(opts.files[0]);
+        json data = json::parse(json_input_file);
         opts.module_name = data["module"].get<std::string>();
+    }
 
     thorin::World world(opts.module_name);
     world.set(opts.log_level);
     world.set(std::make_shared<thorin::Stream>(std::cerr));
 
-    TypeTable table(world);
-    for (auto it : data["type_table"])
-        table.reconstruct_type(it);
+    for (auto filename : opts.files) {
+        std::ifstream json_input_file(filename);
+        json data = json::parse(json_input_file);
 
-    IRBuilder irbuilder(world, table);
-    for (auto it : data["defs"])
-        irbuilder.reconstruct_def(it);
+        if (data.contains("host_triple")) {
+            if (opts.host_triple == "") {
+                opts.host_cpu = data["host_triple"];
+            } else if (opts.host_triple != data["host_triple"]) {
+                std::cerr << "Warning: Previously supplied host triple is different from the one in " << filename << std::endl;
+                opts.host_cpu = data["host_triple"];
+            }
+        }
+        if (data.contains("host_cpu")) {
+            if (opts.host_cpu == "") {
+                opts.host_cpu = data["host_cpu"];
+            } else if (opts.host_cpu != data["host_cpu"]) {
+                std::cerr << "Warning: Previously supplied host cpu is different from the one in " << filename << std::endl;
+                opts.host_cpu = data["host_cpu"];
+            }
+        }
+        if (data.contains("host_attr")) {
+            if (opts.host_attr == "") {
+                opts.host_cpu = data["host_attr"];
+            } else if (opts.host_attr != data["host_attr"]) {
+                std::cerr << "Warning: Previously supplied host attributes is different from the one in " << filename << std::endl;
+                opts.host_cpu = data["host_attr"];
+            }
+        }
 
+        if (opts.module_name == "")
+            opts.module_name = data["module"].get<std::string>();
 
-    if (opts.opt_level == 1)
+        TypeTable table(world);
+        for (auto it : data["type_table"])
+            table.reconstruct_type(it);
+
+        IRBuilder irbuilder(world, table);
+        for (auto it : data["defs"])
+            irbuilder.reconstruct_def(it);
+    }
+
+    for (auto pass : opts.optimizer_passes) {
+        switch (pass) {
+#define MAP(CLASS, ALIAS) case CLASS: { std::cerr << #ALIAS << std::endl; ALIAS(world); break; }
+            OptPassesEnum(MAP)
+#undef MAP
+        }
+    }
+
+    if (opts.optimizer_passes.empty() && opts.opt_level == 1)
         world.cleanup();
     if (opts.emit_c_int) {
         auto name = opts.module_name + ".h";
@@ -260,7 +316,7 @@ int main (int argc, char** argv) {
             thorin::c::emit_c_int(world, stream);
         }
     }
-    if (opts.opt_level > 1 || opts.emit_c || opts.emit_llvm)
+    if (opts.optimizer_passes.empty() && (opts.opt_level > 1 || opts.emit_c || opts.emit_llvm))
         world.opt();
     if (opts.emit_thorin)
         world.dump();
