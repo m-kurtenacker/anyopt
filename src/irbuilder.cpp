@@ -328,7 +328,14 @@ const thorin::Def * IRBuilder::build_Global (json desc) {
     bool is_mutable = desc["mutable"];
     auto init = get_def(desc["init"]);
 
-    return world_.global(init, is_mutable);
+    auto def = world_.global(init, is_mutable);
+
+    if (desc.contains("external")) {
+        def->set_name(desc["external"]);
+        world_.make_external(const_cast<thorin::Def*>(def));
+    }
+
+    return def;
 }
 
 const thorin::Def * IRBuilder::build_Closure (json desc) {
