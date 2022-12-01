@@ -180,6 +180,7 @@ struct ProgramOptions {
                     OptPassesEnum(MAP)
 #undef MAP
                     else {
+                        std::cerr << "Did not recognize pass \"" << argv[i] << "\"" << std::endl;
                         return false;
                     }
                 } else if (matches(argv[i], "--tab-width")) {
@@ -298,7 +299,7 @@ int main (int argc, char** argv) {
 
     for (auto pass : opts.optimizer_passes) {
         switch (pass) {
-#define MAP(CLASS, ALIAS) case CLASS: { std::cerr << #ALIAS << std::endl; ALIAS(world); break; }
+#define MAP(CLASS, ALIAS) case CLASS: std::cerr << #ALIAS << std::endl; ALIAS(world); break;
             OptPassesEnum(MAP)
 #undef MAP
         }
