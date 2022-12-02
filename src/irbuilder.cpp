@@ -328,11 +328,22 @@ const thorin::Def * IRBuilder::build_Global (json desc) {
     bool is_mutable = desc["mutable"];
     auto init = get_def(desc["init"]);
 
-    auto def = world_.global(init, is_mutable);
+    thorin::Global* def = nullptr;
 
     if (desc.contains("external")) {
-        def->set_name(desc["external"]);
-        world_.make_external(const_cast<thorin::Def*>(def));
+        def = const_cast<thorin::Global*>(world_.lookup(desc["external"])->isa<thorin::Global>());
+        if (!def) {
+            def = const_cast<thorin::Global*>(world_.global(init, is_mutable)->as<thorin::Global>());
+            def->set_name(desc["external"]);
+            world_.make_external(def);
+        } else if (def->init()->isa<thorin::Bottom>() && !init->isa<thorin::Bottom>()) {
+            def->set_init(init);
+        } else if (!def->init()->isa<thorin::Bottom>() && !init->isa<thorin::Bottom>()) {
+            std::cerr << "Warning: multiple definitions of global variable" << std::endl;
+            def->set_init(init);
+        }
+    } else {
+        def = const_cast<thorin::Global*>(world_.global(init, is_mutable)->as<thorin::Global>());
     }
 
     return def;
