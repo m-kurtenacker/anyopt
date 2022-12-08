@@ -1,0 +1,48 @@
+# Try to find all libraries and tools related to anyopt
+# in order to compile and link against .art files
+#
+# Anyopt_BIN
+# Anyopt_FOUND
+
+cmake_minimum_required(VERSION 3.13.4)
+
+find_path(Anyopt_BUILD_DIR
+    NAMES CMakeCache.txt
+    PATHS ${Anyopt_BUILD_DIR} ${Anyopt_BUILD_DIR} "@CMAKE_CURRENT_BINARY_DIR@"
+)
+find_path(Anyopt_INSTALL_DIR
+    NAMES share/anydsl/cmake/anyopt-config.cmake
+    PATHS "@CMAKE_INSTALL_PREFIX@"
+)
+find_path(Anyopt_DIR
+    NAMES anyopt-config.cmake
+    PATHS ${Anyopt_DIR} $ENV{Anyopt_DIR} ${CMAKE_CURRENT_LIST_DIR} ${Anyopt_BUILD_DIR} ${Anyopt_INSTALL_DIR} ${Anyopt_SOURCE_DIR} "@CMAKE_CURRENT_BINARY_DIR@/share/anydsl/cmake"
+    PATH_SUFFIXES share/anydsl/cmake
+)
+find_path(Thorin_DIR
+    NAMES thorin-config.cmake
+    PATHS ${Thorin_DIR} $ENV{Thorin_DIR} ${CMAKE_CURRENT_LIST_DIR} "@CMAKE_CURRENT_BINARY_DIR@/share/anydsl/cmake" @Thorin_DIR@
+    PATH_SUFFIXES share/anydsl/cmake
+)
+find_path(LLVM_DIR LLVMConfig.cmake PATHS ${LLVM_DIR} $ENV{LLVM_DIR} "@LLVM_DIR@")
+
+find_path(Anyopt_ROOT_DIR
+    NAMES cmake/anyopt-config.cmake.in
+    PATHS ${Anyopt_DIR} $ENV{Anyopt_DIR} ${Anyopt_ROOT_DIR} "@CMAKE_CURRENT_SOURCE_DIR@" "@CMAKE_SOURCE_DIR@")
+
+if(NOT TARGET anyopt)
+    include(${Anyopt_DIR}/anyopt-exports.cmake)
+endif()
+if(TARGET anyopt AND NOT Anyopt_BIN)
+    set(Anyopt_BIN anyopt)
+else()
+    find_program(Anyopt_BIN
+        NAMES anyopt
+        PATHS ${Anyopt_DIR}/../../../bin ${Anyopt_BUILD_DIR}/bin ${Anyopt_INSTALL_DIR}/bin "@CMAKE_RUNTIME_OUTPUT_DIRECTORY@"
+        PATH_SUFFIXES @CMAKE_CONFIGURATION_TYPES@)
+endif()
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Anyopt DEFAULT_MSG Anyopt_DIR)
+
+mark_as_advanced(Anyopt_ROOT_DIR Anyopt_BUILD_DIR Anyopt_INSTALL_DIR)
