@@ -13,11 +13,12 @@ using json = nlohmann::json;
 
 class IRBuilder {
 public:
-    IRBuilder(thorin::World& world, TypeTable& typetable) : world_(world), typetable_(typetable) {}
+    IRBuilder(thorin::World& world, TypeTable& typetable, thorin::World::Externals& extern_globals) : world_(world), typetable_(typetable), extern_globals_(extern_globals) {}
 
 private:
     thorin::World& world_;
     TypeTable& typetable_;
+    thorin::World::Externals& extern_globals_;
 
     std::map<std::string, const thorin::Def*> known_defs;
 

@@ -256,6 +256,8 @@ int main (int argc, char** argv) {
     world.set(opts.log_level);
     world.set(std::make_shared<thorin::Stream>(std::cerr));
 
+    thorin::World::Externals extern_globals;
+
     for (auto filename : opts.files) {
         std::ifstream json_input_file(filename);
         json data = json::parse(json_input_file);
@@ -292,7 +294,7 @@ int main (int argc, char** argv) {
         for (auto it : data["type_table"])
             table.reconstruct_type(it);
 
-        IRBuilder irbuilder(world, table);
+        IRBuilder irbuilder(world, table, extern_globals);
         for (auto it : data["defs"])
             irbuilder.reconstruct_def(it);
     }

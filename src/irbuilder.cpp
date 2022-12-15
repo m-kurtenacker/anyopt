@@ -331,11 +331,12 @@ const thorin::Def * IRBuilder::build_Global (json desc) {
     thorin::Global* def = nullptr;
 
     if (desc.contains("external")) {
-        def = const_cast<thorin::Global*>(world_.lookup(desc["external"])->isa<thorin::Global>());
+        def = extern_globals_.lookup(desc["external"]).value_or(nullptr)->as<thorin::Global>();
         if (!def) {
             def = const_cast<thorin::Global*>(world_.global(init, is_mutable)->as<thorin::Global>());
             def->set_name(desc["external"]);
             world_.make_external(def);
+            extern_globals_.emplace(def->name(), def);
         } else if (def->init()->isa<thorin::Bottom>() && !init->isa<thorin::Bottom>()) {
             def->set_init(init);
         } else if (!def->init()->isa<thorin::Bottom>() && !init->isa<thorin::Bottom>()) {
