@@ -40,7 +40,10 @@ static void usage() {
                 "         --emit-c               Emits C code in the output file\n"
                 "         --emit-llvm            Emits LLVM IR in the output file\n"
                 "  -On                           Sets the optimization level (n = 0, 1, 2, or 3, defaults to 0)\n"
-                "         --pass                 Manually supply passes that are going to be executed\n"
+                "         --pass                 Manually supply passes that are going to be executed. Passes are:\n"
+#define MAP(CLASS, ALIAS) "                                   " #ALIAS "\n"
+            OptPassesEnum(MAP)
+#undef MAP
                 "  -o <name>                     Sets the module name (defaults to the first file name without its extension)\n"
                 ;
 }
