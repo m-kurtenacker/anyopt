@@ -103,27 +103,51 @@ const thorin::Type * TypeTable::build_MemType(json desc) {
 }
 
 const thorin::Type * TypeTable::build_StructType(json desc) {
-        //TODO: nominal type forward declarations are not supported right now.
-        auto args = get_arglist(desc["args"]);
-        auto name = desc["struct_name"].get<std::string>();
-        auto struct_type = world_.struct_type(name, args.size());
-        for (size_t i = 0; i < args.size(); ++i) {
-            auto arg_name = desc["arg_names"][i].get<std::string>();
-            struct_type->set(i, args[i]);
-            struct_type->set_op_name(i, arg_name);
+        const thorin::StructType* struct_type;
+        auto forward_decl = known_types.find(desc["name"]);
+        auto arg_names = desc["arg_names"];
+
+        if (forward_decl != known_types.end()) {
+            struct_type = forward_decl->second->as<thorin::StructType>();
+        } else {
+            auto name = desc["struct_name"].get<std::string>();
+            struct_type = world_.struct_type(name, arg_names.size());
         }
+
+        if (desc.contains("args")) {
+            auto args = get_arglist(desc["args"]);
+            assert(arg_names.size() == args.size());
+            for (size_t i = 0; i < args.size(); ++i) {
+                auto arg_name = desc["arg_names"][i].get<std::string>();
+                struct_type->set(i, args[i]);
+                struct_type->set_op_name(i, arg_name);
+            }
+        }
+
         return struct_type;
 }
 
 const thorin::Type * TypeTable::build_VariantType(json desc) {
-        auto args = get_arglist(desc["args"]);
-        auto name = desc["variant_name"].get<std::string>();
-        auto variant_type = world_.variant_type(name, args.size());
-        for (size_t i = 0; i < args.size(); ++i) {
-            auto arg_name = desc["arg_names"][i].get<std::string>();
-            variant_type->set(i, args[i]);
-            variant_type->set_op_name(i, arg_name);
+        const thorin::VariantType* variant_type;
+        auto forward_decl = known_types.find(desc["name"]);
+        auto arg_names = desc["arg_names"];
+
+        if (forward_decl != known_types.end()) {
+            variant_type = forward_decl->second->as<thorin::VariantType>();
+        } else {
+            auto name = desc["variant_name"].get<std::string>();
+            variant_type = world_.variant_type(name, arg_names.size());
         }
+
+        if (desc.contains("args")) {
+            auto args = get_arglist(desc["args"]);
+            for (size_t i = 0; i < args.size(); ++i) {
+                auto arg_name = desc["arg_names"][i].get<std::string>();
+                variant_type->set(i, args[i]);
+                variant_type->set_op_name(i, arg_name);
+            }
+        }
+
         return variant_type;
 }
 
