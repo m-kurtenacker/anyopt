@@ -81,6 +81,10 @@ OptPassesEnum(MAP)
 #undef MAP
 };
 
+void mark_pe_done (thorin::World& world) {
+    world.mark_pe_done();
+}
+
 struct ProgramOptions {
     std::vector<std::string> files;
     std::vector<OptimizerPass> optimizer_passes;

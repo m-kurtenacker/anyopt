@@ -4,6 +4,7 @@
 #define OptPassesEnum(N) \
 N(Cleanup_World, cleanup_world) \
 N(PE, pe) \
+N(Mark_PE_Done, mark_pe_done) \
 N(Flatten_Tuples, flatten_tuples) \
 N(Clone_Bodies, clone_bodies) \
 N(Split_Slots, split_slots) \
