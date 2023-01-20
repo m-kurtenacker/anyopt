@@ -172,10 +172,19 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
     if (desc.contains("intrinsic")) {
         if (desc["intrinsic"].get<std::string>() == "branch" || desc["intrinsic"].get<std::string>() == "match") {
             //pass
+        } else if (desc["plugin"].get<bool>()) {
+            continuation->set_name(desc["intrinsic"]);
+            continuation->attributes().intrinsic = thorin::Intrinsic::Plugin;
         } else {
             continuation->set_name(desc["intrinsic"]);
             continuation->set_intrinsic();
         }
+    }
+
+    if (desc.contains("depends")) {
+        assert(continuation->attributes().intrinsic == thorin::Intrinsic::Plugin);
+        auto depends = get_def(desc["depends"])->as<thorin::Continuation>();
+        continuation->attributes().depends = depends;
     }
 
     return continuation;

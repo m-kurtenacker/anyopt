@@ -26,6 +26,7 @@
 #include<thorin/transform/inliner.h>
 #include<thorin/transform/lift_builtins.h>
 #include<thorin/transform/partial_evaluation.h>
+#include<thorin/transform/plugin_execute.h>
 #include<thorin/transform/split_slots.h>
 
 using namespace anyopt;
@@ -43,6 +44,7 @@ static void usage() {
                 "         --tab-width <n>        Sets the width of the TAB character in error messages or when printing the AST (in spaces, defaults to 2)\n"
                 "         --emit-c               Emits C code in the output file\n"
                 "         --emit-llvm            Emits LLVM IR in the output file\n"
+                "         --plugin <file>        Load additional code transformations as plugins\n"
                 "  -On                           Sets the optimization level (n = 0, 1, 2, or 3, defaults to 0)\n"
                 "  -p     --pass                 Manually supply passes that are going to be executed. Passes are:\n"
 #define MAP(CLASS, ALIAS, PASS) "                                   " #ALIAS "\n"
@@ -86,6 +88,7 @@ static void passes() {
               << "--pass lower2cff "
               << "--pass flatten_tuples "
               << "--pass split_slots "
+              << "--pass plugin_execute "
               << "--pass closure_conversion "
               << "--pass lift_builtins "
               << "--pass inliner "
@@ -127,6 +130,7 @@ struct ProgramOptions {
     size_t max_errors = 0;
     size_t tab_width = 2;
     thorin::LogLevel log_level = thorin::LogLevel::Error;
+    std::vector<std::string> plugin_files;
 
     bool matches(const char* arg, const char* opt) {
         return !strcmp(arg, opt);
@@ -175,6 +179,8 @@ struct ProgramOptions {
                     if (max_errors == 0) {
                         return false;
                     }
+                } else if (matches(argv[i], "--plugin")) {
+                    plugin_files.push_back(argv[++i]);
                 } else if (matches(argv[i], "--emit-thorin")) {
                     emit_thorin = true;
                 } else if (matches(argv[i], "--emit-json")) {
@@ -342,6 +348,10 @@ int main (int argc, char** argv) {
         if (opts.compute_scope != "") {
             print_scope_analysis(irbuilder, opts.compute_scope);
         }
+    }
+
+    for (auto plugin_to_load : opts.plugin_files) {
+        thorin.register_plugin(plugin_to_load);
     }
 
     for (auto pass : opts.optimizer_passes) {

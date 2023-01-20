@@ -23,3 +23,5 @@ if (Thorin_HAS_LLVM_SUPPORT)
     target_compile_definitions(anyopt PUBLIC -DENABLE_LLVM)
     llvm_config(anyopt ${AnyDSL_LLVM_LINK_SHARED} core support)
 endif ()
+
+target_link_libraries(anyopt PUBLIC dl)
