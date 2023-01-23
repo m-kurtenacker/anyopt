@@ -40,10 +40,11 @@ static void usage() {
                 "         --emit-c               Emits C code in the output file\n"
                 "         --emit-llvm            Emits LLVM IR in the output file\n"
                 "  -On                           Sets the optimization level (n = 0, 1, 2, or 3, defaults to 0)\n"
-                "         --pass                 Manually supply passes that are going to be executed. Passes are:\n"
+                "  -p     --pass                 Manually supply passes that are going to be executed. Passes are:\n"
 #define MAP(CLASS, ALIAS) "                                   " #ALIAS "\n"
             OptPassesEnum(MAP)
 #undef MAP
+                "         --passes               Displays the normal optimization pass chain\n"
                 "  -o <name>                     Sets the module name (defaults to the first file name without its extension)\n"
                 ;
 }
@@ -73,6 +74,23 @@ static void version() {
     std::cout << "anyopt " << ANYOPT_VERSION_MAJOR << "." << ANYOPT_VERSION_MINOR << " "
              << year << "-" << month << "-" << day
              <<  " (" << build << ")\n";
+}
+
+static void passes() {
+    std::cout << "--pass cleanup_world "
+              << "--pass pe "
+              << "--pass flatten_tuples "
+              << "--pass clone_bodies "
+              << "--pass split_slots "
+              << "--pass plugin_execute "
+              << "--pass closure_conversion "
+              << "--pass lift_builtins "
+              << "--pass inliner "
+              << "--pass hoist_enters "
+              << "--pass dead_load_opt "
+              << "--pass cleanup_world "
+              << "--pass codegen_prepare"
+              << "\n";
 }
 
 enum OptimizerPass {
@@ -136,6 +154,10 @@ struct ProgramOptions {
                     usage();
                     exit = true;
                     return true;
+                } else if (matches(argv[i], "--passes")) {
+                    passes();
+                    exit = true;
+                    return true;
                 } else if (matches(argv[i], "--version")) {
                     version();
                     exit = true;
@@ -177,7 +199,7 @@ struct ProgramOptions {
                     else {
                         return false;
                     }
-                } else if (matches(argv[i], "--pass")) {
+                } else if (matches(argv[i], "-p", "--pass")) {
                     if (!check_arg(argc, argv, i))
                         return false;
                     i++;
