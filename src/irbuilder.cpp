@@ -111,7 +111,17 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
     if (forward_decl != known_defs.end()) {
         continuation = forward_decl->second->as_nom<thorin::Continuation>();
     } else {
-        if (desc.contains("intrinsic")) {
+        if (desc.contains("internal")) {
+            continuation = extern_globals_.lookup(desc["internal"]).value_or(nullptr)->as<thorin::Continuation>();
+            if (!continuation) {
+                auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
+                continuation = world().continuation(fn_type);
+                continuation->set_name(desc["internal"]);
+                world().make_external(continuation);
+                continuation->attributes().cc = thorin::CC::Internal;
+                extern_globals_.emplace(continuation->name(), continuation);
+            }
+        } else if (desc.contains("intrinsic")) {
             if (desc["intrinsic"].get<std::string>() == "branch") {
                 continuation = world().branch();
             } else if (desc["intrinsic"].get<std::string>() == "match") {
@@ -150,6 +160,9 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
     }
 
     if (desc.contains("app")) {
+        if (extern_globals_.lookup(continuation->name())) {
+            world().make_internal(continuation);
+        }
         auto args = get_arglist(desc["app"]["args"]);
         auto callee = get_def(desc["app"]["target"]);
         continuation->jump(callee, args);
