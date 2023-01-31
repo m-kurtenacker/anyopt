@@ -71,47 +71,47 @@ const thorin::Type * TypeTable::build_DefiniteArrayType(json desc) {
         auto args = get_arglist(desc["args"]);
         assert(args.size() == 1);
         size_t length = desc["length"].get<size_t>();
-        return world_.definite_array_type(args[0], length);
+        return world().definite_array_type(args[0], length);
 }
 
 const thorin::Type * TypeTable::build_IndefiniteArrayType(json desc) {
         auto args = get_arglist(desc["args"]);
         assert(args.size() == 1);
-        return world_.indefinite_array_type(args[0]);
+        return world().indefinite_array_type(args[0]);
 }
 
 const thorin::Type * TypeTable::build_BottomType(json desc) {
-        return world_.bottom_type();
+        return world().bottom_type();
 }
 
 const thorin::Type * TypeTable::build_FnType(json desc) {
         auto args = get_arglist(desc["args"]);
-        return world_.fn_type(args);
+        return world().fn_type(args);
 }
 
 const thorin::Type * TypeTable::build_ClosureType(json desc) {
         auto args = get_arglist(desc["args"]);
-        return world_.closure_type(args);
+        return world().closure_type(args);
 }
 
 const thorin::Type * TypeTable::build_FrameType(json desc) {
-        return world_.bottom_type();
+        return world().bottom_type();
 }
 
 const thorin::Type * TypeTable::build_MemType(json desc) {
-        return world_.mem_type();
+        return world().mem_type();
 }
 
 const thorin::Type * TypeTable::build_StructType(json desc) {
-        const thorin::StructType* struct_type;
+        thorin::StructType* struct_type;
         auto forward_decl = known_types.find(desc["name"]);
         auto arg_names = desc["arg_names"];
 
         if (forward_decl != known_types.end()) {
-            struct_type = forward_decl->second->as<thorin::StructType>();
+            struct_type = const_cast<thorin::StructType*>(forward_decl->second->as<thorin::StructType>());
         } else {
             auto name = desc["struct_name"].get<std::string>();
-            struct_type = world_.struct_type(name, arg_names.size());
+            struct_type = world().struct_type(name, arg_names.size());
         }
 
         if (desc.contains("args")) {
@@ -119,7 +119,7 @@ const thorin::Type * TypeTable::build_StructType(json desc) {
             assert(arg_names.size() == args.size());
             for (size_t i = 0; i < args.size(); ++i) {
                 auto arg_name = desc["arg_names"][i].get<std::string>();
-                struct_type->set(i, args[i]);
+                struct_type->set_op(i, args[i]);
                 struct_type->set_op_name(i, arg_name);
             }
         }
@@ -128,22 +128,22 @@ const thorin::Type * TypeTable::build_StructType(json desc) {
 }
 
 const thorin::Type * TypeTable::build_VariantType(json desc) {
-        const thorin::VariantType* variant_type;
+        thorin::VariantType* variant_type;
         auto forward_decl = known_types.find(desc["name"]);
         auto arg_names = desc["arg_names"];
 
         if (forward_decl != known_types.end()) {
-            variant_type = forward_decl->second->as<thorin::VariantType>();
+            variant_type = const_cast<thorin::VariantType*>(forward_decl->second->as<thorin::VariantType>());
         } else {
             auto name = desc["variant_name"].get<std::string>();
-            variant_type = world_.variant_type(name, arg_names.size());
+            variant_type = world().variant_type(name, arg_names.size());
         }
 
         if (desc.contains("args")) {
             auto args = get_arglist(desc["args"]);
             for (size_t i = 0; i < args.size(); ++i) {
                 auto arg_name = desc["arg_names"][i].get<std::string>();
-                variant_type->set(i, args[i]);
+                variant_type->set_op(i, args[i]);
                 variant_type->set_op_name(i, arg_name);
             }
         }
@@ -153,13 +153,13 @@ const thorin::Type * TypeTable::build_VariantType(json desc) {
 
 const thorin::Type * TypeTable::build_TupleType(json desc) {
         auto args = get_arglist(desc["args"]);
-        return world_.tuple_type(args);
+        return world().tuple_type(args);
 }
 
 const thorin::Type * TypeTable::build_PrimType(json desc) {
         auto tag = resolvetag(desc["tag"]);
         size_t length = desc["length"].get<size_t>();
-        return world_.prim_type(tag, length);
+        return world().prim_type(tag, length);
 }
 
 const thorin::Type * TypeTable::build_PtrType(json desc) {
@@ -174,7 +174,7 @@ const thorin::Type * TypeTable::build_PtrType(json desc) {
             addrspace = resolveaddrspace(desc["addrspace"]);
         }
 
-        return world_.ptr_type(args[0], length, device, addrspace);
+        return world().ptr_type(args[0], length, device, addrspace);
 }
 
 const thorin::Type * TypeTable::reconstruct_type(json desc) {

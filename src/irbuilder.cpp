@@ -49,7 +49,7 @@ const thorin::Def * IRBuilder::build_Constant (json desc) {
     default:
         assert(false && "not implemented");
     }
-    const thorin::Def* literal = world_.literal(primtype->primtype_tag(), value, {});
+    const thorin::Def* literal = world().literal(primtype->primtype_tag(), value, {});
     return literal;
 }
 
@@ -58,7 +58,7 @@ const thorin::Def * IRBuilder::build_Top (json desc) {
     if (auto vector_type = const_type->isa<thorin::VectorType>())
         assert(vector_type->length() == 1);
 
-    return world_.top(const_type);
+    return world().top(const_type);
 }
 
 const thorin::Def * IRBuilder::build_Bottom (json desc) {
@@ -66,7 +66,7 @@ const thorin::Def * IRBuilder::build_Bottom (json desc) {
     if (auto vector_type = const_type->isa<thorin::VectorType>())
         assert(vector_type->length() == 1);
 
-    return world_.bottom(const_type);
+    return world().bottom(const_type);
 }
 
 const thorin::Def * IRBuilder::build_Alloc (json desc) {
@@ -75,25 +75,25 @@ const thorin::Def * IRBuilder::build_Alloc (json desc) {
 
     assert(args.size() == 2);
 
-    return world_.alloc(target_type, args[0], args[1]);
+    return world().alloc(target_type, args[0], args[1]);
 }
 
 const thorin::Def * IRBuilder::build_Known (json desc) {
     auto def = get_def(desc["def"]);
 
-    return world_.known(def);
+    return world().known(def);
 }
 
 const thorin::Def * IRBuilder::build_Sizeof (json desc) {
     auto target_type = typetable_.get_type(desc["target_type"]);
 
-    return world_.size_of(target_type);
+    return world().size_of(target_type);
 }
 
 const thorin::Def * IRBuilder::build_Alignof (json desc) {
     auto target_type = typetable_.get_type(desc["target_type"]);
 
-    return world_.align_of(target_type);
+    return world().align_of(target_type);
 }
 
 const thorin::Def * IRBuilder::build_Select (json desc) {
@@ -101,7 +101,7 @@ const thorin::Def * IRBuilder::build_Select (json desc) {
 
     assert(args.size() == 3);
 
-    return world_.select(args[0], args[1], args[2]);
+    return world().select(args[0], args[1], args[2]);
 }
 
 const thorin::Def * IRBuilder::build_Continuation (json desc) {
@@ -113,18 +113,18 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
     } else {
         if (desc.contains("intrinsic")) {
             if (desc["intrinsic"].get<std::string>() == "branch") {
-                continuation = world_.branch();
+                continuation = world().branch();
             } else if (desc["intrinsic"].get<std::string>() == "match") {
                 auto variant_type = typetable_.get_type(desc["variant_type"]);
                 size_t num_patterns = desc["num_patterns"];
-                continuation = world_.match(variant_type, num_patterns);
+                continuation = world().match(variant_type, num_patterns);
             } else {
                 auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
-                continuation = world_.continuation(fn_type);
+                continuation = world().continuation(fn_type);
             }
         } else {
             auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
-            continuation = world_.continuation(fn_type);
+            continuation = world().continuation(fn_type);
         }
     }
 
@@ -142,7 +142,7 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
 
     if (desc.contains("external")) {
         continuation->set_name(desc["external"]);
-        world_.make_external(continuation);
+        world().make_external(continuation);
     }
 
     if (desc.contains("device")) {
@@ -186,7 +186,7 @@ const thorin::Def * IRBuilder::build_ArithOp (json desc) {
 
     assert(args.size() == 2);
 
-    return world_.arithop(tag, args[0], args[1]);
+    return world().arithop(tag, args[0], args[1]);
 }
 
 thorin::MathOpTag IRBuilder::resolve_mathop_tag (std::string mathop_tag) {
@@ -206,7 +206,7 @@ const thorin::Def * IRBuilder::build_MathOp (json desc) {
     auto args = get_arglist(desc["args"]);
     auto tag = resolve_mathop_tag(desc["op"]);
 
-    return world_.mathop(tag, args);
+    return world().mathop(tag, args);
 }
 
 const thorin::Def * IRBuilder::build_LEA (json desc) {
@@ -214,7 +214,7 @@ const thorin::Def * IRBuilder::build_LEA (json desc) {
 
     assert(args.size() == 2);
 
-    return world_.lea(args[0], args[1], {});
+    return world().lea(args[0], args[1], {});
 }
 
 const thorin::Def * IRBuilder::build_Load (json desc) {
@@ -222,7 +222,7 @@ const thorin::Def * IRBuilder::build_Load (json desc) {
 
     assert(args.size() == 2);
 
-    return world_.load(args[0], args[1]);
+    return world().load(args[0], args[1]);
 }
 
 const thorin::Def * IRBuilder::build_Extract (json desc) {
@@ -230,7 +230,7 @@ const thorin::Def * IRBuilder::build_Extract (json desc) {
 
     assert(args.size() == 2);
 
-    return world_.extract(args[0], args[1]);
+    return world().extract(args[0], args[1]);
 }
 
 const thorin::Def * IRBuilder::build_Insert (json desc) {
@@ -238,14 +238,14 @@ const thorin::Def * IRBuilder::build_Insert (json desc) {
 
     assert(args.size() == 3);
 
-    return world_.insert(args[0], args[1], args[2]);
+    return world().insert(args[0], args[1], args[2]);
 }
 
 const thorin::Def * IRBuilder::build_Cast (json desc) {
     auto target_type = typetable_.get_type(desc["target_type"]);
     auto source = get_def(desc["source"]);
 
-    return world_.cast(target_type, source);
+    return world().cast(target_type, source);
 }
 
 thorin::CmpTag IRBuilder::resolve_cmp_tag (std::string cmp_tag) {
@@ -267,19 +267,19 @@ const thorin::Def * IRBuilder::build_Cmp (json desc) {
 
     assert(args.size() == 2);
 
-    return world_.cmp(tag, args[0], args[1]);
+    return world().cmp(tag, args[0], args[1]);
 }
 
 const thorin::Def * IRBuilder::build_Run (json desc) {
     auto target = get_def(desc["target"]);
 
-    return world_.run(target);
+    return world().run(target);
 }
 
 const thorin::Def * IRBuilder::build_Hlt (json desc) {
     auto target = get_def(desc["target"]);
 
-    return world_.hlt(target);
+    return world().hlt(target);
 }
 
 const thorin::Def * IRBuilder::build_Store (json desc) {
@@ -287,41 +287,41 @@ const thorin::Def * IRBuilder::build_Store (json desc) {
 
     assert(args.size() == 3);
 
-    return world_.store(args[0], args[1], args[2]);
+    return world().store(args[0], args[1], args[2]);
 }
 
 const thorin::Def * IRBuilder::build_Enter (json desc) {
     auto mem = get_def(desc["mem"]);
 
-    return world_.enter(mem);
+    return world().enter(mem);
 }
 
 const thorin::Def * IRBuilder::build_Slot (json desc) {
     auto target_type = typetable_.get_type(desc["target_type"]);
     auto frame = get_def(desc["frame"]);
 
-    return world_.slot(target_type, frame);
+    return world().slot(target_type, frame);
 }
 
 const thorin::Def * IRBuilder::build_Bitcast (json desc) {
     auto target_type = typetable_.get_type(desc["target_type"]);
     auto source = get_def(desc["source"]);
 
-    return world_.bitcast(target_type, source);
+    return world().bitcast(target_type, source);
 }
 
 const thorin::Def * IRBuilder::build_IndefiniteArray (json desc) {
     auto elem_type = typetable_.get_type(desc["elem_type"]);
     auto dim = get_def(desc["dim"]);
 
-    return world_.indefinite_array(elem_type, dim);
+    return world().indefinite_array(elem_type, dim);
 }
 
 const thorin::Def * IRBuilder::build_DefiniteArray (json desc) {
     auto elem_type = typetable_.get_type(desc["elem_type"]);
     auto args = get_arglist(desc["args"]);
 
-    return world_.definite_array(elem_type, args);
+    return world().definite_array(elem_type, args);
 }
 
 const thorin::Def * IRBuilder::build_Global (json desc) {
@@ -333,9 +333,9 @@ const thorin::Def * IRBuilder::build_Global (json desc) {
     if (desc.contains("external")) {
         def = extern_globals_.lookup(desc["external"]).value_or(nullptr)->as<thorin::Global>();
         if (!def) {
-            def = const_cast<thorin::Global*>(world_.global(init, is_mutable)->as<thorin::Global>());
+            def = const_cast<thorin::Global*>(world().global(init, is_mutable)->as<thorin::Global>());
             def->set_name(desc["external"]);
-            world_.make_external(def);
+            world().make_external(def);
             extern_globals_.emplace(def->name(), def);
         } else if (def->init()->isa<thorin::Bottom>() && !init->isa<thorin::Bottom>()) {
             def->set_init(init);
@@ -344,7 +344,7 @@ const thorin::Def * IRBuilder::build_Global (json desc) {
             def->set_init(init);
         }
     } else {
-        def = const_cast<thorin::Global*>(world_.global(init, is_mutable)->as<thorin::Global>());
+        def = const_cast<thorin::Global*>(world().global(init, is_mutable)->as<thorin::Global>());
     }
 
     return def;
@@ -356,32 +356,32 @@ const thorin::Def * IRBuilder::build_Closure (json desc) {
 
     assert(args.size() == 2);
 
-    return world_.closure(closure_type, args[0], args[1]);
+    return world().closure(closure_type, args[0], args[1]);
 }
 
 const thorin::Def * IRBuilder::build_Struct (json desc) {
     auto args = get_arglist(desc["args"]);
     auto struct_type = typetable_.get_type(desc["struct_type"])->as<thorin::StructType>();
 
-    return world_.struct_agg(struct_type, args);
+    return world().struct_agg(struct_type, args);
 }
 
 const thorin::Def * IRBuilder::build_Tuple (json desc) {
     auto args = get_arglist(desc["args"]);
 
-    return world_.tuple(args);
+    return world().tuple(args);
 }
 
 const thorin::Def * IRBuilder::build_Vector (json desc) {
     auto args = get_arglist(desc["args"]);
 
-    return world_.vector(args);
+    return world().vector(args);
 }
 
 const thorin::Def * IRBuilder::build_Filter (json desc) {
     auto args = get_arglist(desc["args"]);
 
-    return world_.filter(args);
+    return world().filter(args);
 }
 
 const thorin::Def * IRBuilder::build_Variant (json desc) {
@@ -389,7 +389,7 @@ const thorin::Def * IRBuilder::build_Variant (json desc) {
     auto value = get_def(desc["value"]);
     size_t index = desc["index"];
 
-    return world_.variant(variant_type, value, index);
+    return world().variant(variant_type, value, index);
 }
 
 const thorin::Def * IRBuilder::build_Assembly (json desc) {
@@ -426,20 +426,20 @@ const thorin::Def * IRBuilder::build_Assembly (json desc) {
         assert(false);
     }
 
-    return world_.assembly(asm_type, inputs, asm_template, out_constraints, in_constraints, clobbers, flags);
+    return world().assembly(asm_type, inputs, asm_template, out_constraints, in_constraints, clobbers, flags);
 }
 
 const thorin::Def * IRBuilder::build_VariantExtract (json desc) {
     auto value = get_def(desc["value"]);
     size_t index = desc["index"];
 
-    return world_.variant_extract(value, index);
+    return world().variant_extract(value, index);
 }
 
 const thorin::Def * IRBuilder::build_VariantIndex (json desc) {
     auto value = get_def(desc["value"]);
 
-    return world_.variant_index(value);
+    return world().variant_index(value);
 }
 
 const thorin::Def * IRBuilder::reconstruct_def(json desc) {

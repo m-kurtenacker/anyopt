@@ -11,10 +11,10 @@ using json = nlohmann::json;
 
 class TypeTable {
 public:
-    TypeTable(thorin::World& world) : world_(world) {}
+    TypeTable(thorin::Thorin& thorin) : thorin_(thorin) {}
 
 private:
-    thorin::World& world_;
+    thorin::Thorin& thorin_;
 
     std::map<std::string, const thorin::Type*> known_types;
 
@@ -28,6 +28,8 @@ private:
     thorin::PrimTypeTag resolvetag (std::string type_tag);
     thorin::AddrSpace resolveaddrspace (std::string addr_space);
     thorin::Array<const thorin::Type*> get_arglist (json arg_list);
+
+    thorin::World& world() { return thorin_.world(); }
 
 #define CreateFunction(NAME, CLASS) const thorin::Type* build_##CLASS (json desc);
     TypeTableEnum(CreateFunction)

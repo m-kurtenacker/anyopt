@@ -13,10 +13,10 @@ using json = nlohmann::json;
 
 class IRBuilder {
 public:
-    IRBuilder(thorin::World& world, TypeTable& typetable, thorin::World::Externals& extern_globals) : world_(world), typetable_(typetable), extern_globals_(extern_globals) {}
+    IRBuilder(thorin::Thorin& thorin, TypeTable& typetable, thorin::World::Externals& extern_globals) : thorin_(thorin), typetable_(typetable), extern_globals_(extern_globals) {}
 
 private:
-    thorin::World& world_;
+    thorin::Thorin& thorin_;
     TypeTable& typetable_;
     thorin::World::Externals& extern_globals_;
 
@@ -34,6 +34,8 @@ private:
     thorin::CmpTag resolve_cmp_tag (std::string cmp_tag);
 
     thorin::Array<const thorin::Def*> get_arglist (json arg_list);
+
+    thorin::World& world() { return thorin_.world(); }
 
 #define CreateFunction(NAME, CLASS) const thorin::Def* build_##CLASS (json desc);
     DefTypeEnum(CreateFunction)

@@ -81,8 +81,8 @@ OptPassesEnum(MAP)
 #undef MAP
 };
 
-void mark_pe_done (thorin::World& world) {
-    world.mark_pe_done();
+void mark_pe_done (thorin::Thorin& thorin) {
+    thorin.world().mark_pe_done();
 }
 
 struct ProgramOptions {
@@ -237,8 +237,8 @@ struct ProgramOptions {
     }
 };
 
-void pe (thorin::World& world) {
-    while(partial_evaluation(world, true));
+void pe (thorin::Thorin& thorin) {
+    while(partial_evaluation(thorin.world(), true));
 }
 
 int main (int argc, char** argv) {
@@ -259,9 +259,9 @@ int main (int argc, char** argv) {
         opts.module_name = data["module"].get<std::string>();
     }
 
-    thorin::World world(opts.module_name);
-    world.set(opts.log_level);
-    world.set(std::make_shared<thorin::Stream>(std::cerr));
+    thorin::Thorin thorin(opts.module_name);
+    thorin.world().set(opts.log_level);
+    thorin.world().set(std::make_shared<thorin::Stream>(std::cerr));
 
     thorin::World::Externals extern_globals;
 
@@ -297,25 +297,25 @@ int main (int argc, char** argv) {
         if (opts.module_name == "")
             opts.module_name = data["module"].get<std::string>();
 
-        TypeTable table(world);
+        TypeTable table(thorin);
         for (auto it : data["type_table"])
             table.reconstruct_type(it);
 
-        IRBuilder irbuilder(world, table, extern_globals);
+        IRBuilder irbuilder(thorin, table, extern_globals);
         for (auto it : data["defs"])
             irbuilder.reconstruct_def(it);
     }
 
     for (auto pass : opts.optimizer_passes) {
         switch (pass) {
-#define MAP(CLASS, ALIAS) case CLASS: std::cerr << #ALIAS << std::endl; ALIAS(world); break;
+#define MAP(CLASS, ALIAS) case CLASS: std::cerr << #ALIAS << std::endl; ALIAS(thorin); break;
             OptPassesEnum(MAP)
 #undef MAP
         }
     }
 
     if (opts.optimizer_passes.empty() && opts.opt_level == 1)
-        world.cleanup();
+        thorin.cleanup();
     if (opts.emit_c_int) {
         auto name = opts.module_name + ".h";
         std::ofstream file(name);
@@ -323,15 +323,15 @@ int main (int argc, char** argv) {
             std::cerr << "cannot open '" << name << "' for writing" << std::endl;
         else {
             thorin::Stream stream(file);
-            thorin::c::emit_c_int(world, stream);
+            thorin::c::emit_c_int(thorin, stream);
         }
     }
     if (opts.optimizer_passes.empty() && (opts.opt_level > 1 || opts.emit_c || opts.emit_llvm))
-        world.opt();
+        thorin.opt();
     if (opts.emit_thorin)
-        world.dump();
+        thorin.world().dump();
     if (opts.emit_json || opts.emit_c || opts.emit_llvm) {
-        thorin::DeviceBackends backends(world, opts.opt_level, opts.debug, opts.hls_flags);
+        thorin::DeviceBackends backends(thorin.world(), opts.opt_level, opts.debug, opts.hls_flags);
         auto emit_to_file = [&] (thorin::CodeGen& cg) {
             auto name = opts.module_name + cg.file_ext();
             std::ofstream file(name);
@@ -342,15 +342,15 @@ int main (int argc, char** argv) {
         };
         if (opts.emit_c) {
             thorin::Cont2Config kernel_configs;
-            thorin::c::CodeGen cg(world, kernel_configs, thorin::c::Lang::C99, opts.debug, opts.hls_flags);
+            thorin::c::CodeGen cg(thorin, kernel_configs, thorin::c::Lang::C99, opts.debug, opts.hls_flags);
             emit_to_file(cg);
         }
         if (opts.emit_json) {
-            thorin::json::CodeGen cg(world, opts.debug, opts.host_triple, opts.host_cpu, opts.host_attr);
+            thorin::json::CodeGen cg(thorin, opts.debug, opts.host_triple, opts.host_cpu, opts.host_attr);
             emit_to_file(cg);
         }
         if (opts.emit_llvm) {
-            thorin::llvm::CPUCodeGen cg(world, opts.opt_level, opts.debug, opts.host_triple, opts.host_cpu, opts.host_attr);
+            thorin::llvm::CPUCodeGen cg(thorin, opts.opt_level, opts.debug, opts.host_triple, opts.host_cpu, opts.host_attr);
             emit_to_file(cg);
         }
         for (auto& cg : backends.cgs) {
