@@ -41,7 +41,7 @@ static void usage() {
                 "         --emit-llvm            Emits LLVM IR in the output file\n"
                 "  -On                           Sets the optimization level (n = 0, 1, 2, or 3, defaults to 0)\n"
                 "  -p     --pass                 Manually supply passes that are going to be executed. Passes are:\n"
-#define MAP(CLASS, ALIAS) "                                   " #ALIAS "\n"
+#define MAP(CLASS, ALIAS, PASS) "                                   " #ALIAS "\n"
             OptPassesEnum(MAP)
 #undef MAP
                 "         --passes               Displays the normal optimization pass chain\n"
@@ -94,7 +94,7 @@ static void passes() {
 }
 
 enum OptimizerPass {
-#define MAP(CLASS, ALIAS) CLASS,
+#define MAP(CLASS, ALIAS, PASS) CLASS,
 OptPassesEnum(MAP)
 #undef MAP
 };
@@ -205,7 +205,7 @@ struct ProgramOptions {
                     i++;
                     using namespace std::string_literals;
                     if (false) {}
-#define MAP(CLASS, ALIAS) else if (argv[i] == #ALIAS##s) { optimizer_passes.push_back(CLASS); }
+#define MAP(CLASS, ALIAS, PASS) else if (argv[i] == #ALIAS##s) { optimizer_passes.push_back(CLASS); }
                     OptPassesEnum(MAP)
 #undef MAP
                     else {
@@ -330,7 +330,7 @@ int main (int argc, char** argv) {
 
     for (auto pass : opts.optimizer_passes) {
         switch (pass) {
-#define MAP(CLASS, ALIAS) case CLASS: std::cerr << #ALIAS << std::endl; ALIAS(thorin); break;
+#define MAP(CLASS, ALIAS, PASS) case CLASS: std::cerr << #ALIAS << std::endl; PASS(thorin); break;
             OptPassesEnum(MAP)
 #undef MAP
         }
