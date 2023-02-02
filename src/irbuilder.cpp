@@ -160,9 +160,6 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
     }
 
     if (desc.contains("app")) {
-        if (extern_globals_.lookup(continuation->name())) {
-            world().make_internal(continuation);
-        }
         auto args = get_arglist(desc["app"]["args"]);
         auto callee = get_def(desc["app"]["target"]);
         continuation->jump(callee, args);
