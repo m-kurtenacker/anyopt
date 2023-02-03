@@ -366,6 +366,16 @@ const thorin::Def * IRBuilder::build_Struct (json desc) {
     return world().struct_agg(struct_type, args);
 }
 
+const thorin::Def * IRBuilder::build_VectorLift (json desc) {
+    auto args = get_arglist(desc["args"]);
+    assert(args.size() == 1);
+
+    auto target_type = typetable_.get_type(desc["vector_type"]);
+
+    auto vector_type = target_type->as<thorin::VectorContainerType>();
+    return world().vector_lift(vector_type, args[0]);
+}
+
 const thorin::Def * IRBuilder::build_Tuple (json desc) {
     auto args = get_arglist(desc["args"]);
 

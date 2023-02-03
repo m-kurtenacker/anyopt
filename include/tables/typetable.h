@@ -14,6 +14,7 @@ N("variant", VariantType) \
 N("tuple", TupleType) \
 N("prim", PrimType) \
 N("ptr", PtrType) \
+N("vector_container", VectorContainerType) \
 
 #define AddrSpaceEnum(N) \
 N("generic", Generic) \

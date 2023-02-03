@@ -177,6 +177,14 @@ const thorin::Type * TypeTable::build_PtrType(json desc) {
         return world().ptr_type(args[0], length, device, addrspace);
 }
 
+const thorin::Type * TypeTable::build_VectorContainerType(json desc) {
+        auto args = get_arglist(desc["args"]);
+        assert(args.size() == 1);
+        size_t length = desc["length"].get<size_t>();
+
+        return world().vector_container_type(args[0], length);
+}
+
 const thorin::Type * TypeTable::reconstruct_type(json desc) {
     const thorin::Type* return_type = nullptr;
     switch (resolvetype(desc["type"])) {

@@ -25,6 +25,7 @@ N("indef_array", IndefiniteArray) \
 N("global", Global) \
 N("closure", Closure) \
 N("struct", Struct) \
+N("vector_lift", VectorLift) \
 N("tuple", Tuple) \
 N("vector", Vector) \
 N("alloc", Alloc) \
