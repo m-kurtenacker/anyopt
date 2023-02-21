@@ -1,4 +1,6 @@
-#include "irbuilder.h"
+#include "anyopt/irbuilder.h"
+
+namespace anyopt {
 
 IRBuilder::DefType IRBuilder::resolvedef (std::string def_type) {
     static const std::map<std::string, DefType> TypeMap {
@@ -464,4 +466,6 @@ const thorin::Def * IRBuilder::reconstruct_def(json desc) {
     }
     assert(return_def);
     return known_defs[desc["name"]] = return_def;
+}
+
 }

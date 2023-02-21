@@ -1,7 +1,7 @@
-#include "main.h"
-#include "typetable.h"
-#include "irbuilder.h"
-#include "tables/optpasses.h"
+#include "anyopt/main.h"
+#include "anyopt/typetable.h"
+#include "anyopt/irbuilder.h"
+#include "anyopt/tables/optpasses.h"
 
 #include<iostream>
 #include<fstream>
@@ -25,6 +25,8 @@
 #include<thorin/transform/lift_builtins.h>
 #include<thorin/transform/partial_evaluation.h>
 #include<thorin/transform/split_slots.h>
+
+using namespace anyopt;
 
 static void usage() {
     std::cout << "usage: anyopt [options] files...\n"

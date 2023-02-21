@@ -1,4 +1,6 @@
-#include "typetable.h"
+#include "anyopt/typetable.h"
+
+namespace anyopt {
 
 TypeTable::OptiType TypeTable::resolvetype (std::string type_name) {
     static const std::map<std::string, OptiType> TypeMap {
@@ -189,4 +191,6 @@ const thorin::Type * TypeTable::reconstruct_type(json desc) {
     }
     assert(return_type);
     return known_types[desc["name"]] = return_type;
+}
+
 }

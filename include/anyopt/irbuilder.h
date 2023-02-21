@@ -3,13 +3,15 @@
 
 #include "typetable.h"
 
-#include "tables/deftable.h"
+#include "anyopt/tables/deftable.h"
 
 #include<thorin/world.h>
 #include<nlohmann/json.hpp>
 #include<map>
 
 using json = nlohmann::json;
+
+namespace anyopt {
 
 class IRBuilder {
 public:
@@ -45,5 +47,7 @@ public:
     const thorin::Def * get_def (std::string type_name);
     const thorin::Def * reconstruct_def(json desc);
 };
+
+}
 
 #endif

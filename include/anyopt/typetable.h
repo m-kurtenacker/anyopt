@@ -1,13 +1,15 @@
 #ifndef TYPE_TABLE_H
 #define TYPE_TABLE_H
 
-#include "tables/typetable.h"
+#include "anyopt/tables/typetable.h"
 
 #include<thorin/world.h>
 #include<nlohmann/json.hpp>
 #include<map>
 
 using json = nlohmann::json;
+
+namespace anyopt {
 
 class TypeTable {
 public:
@@ -39,5 +41,7 @@ public:
     const thorin::Type * get_type(std::string type_name);
     const thorin::Type * reconstruct_type(json desc);
 };
+
+}
 
 #endif

@@ -42,5 +42,5 @@ add_subdirectory(src)
 #    add_subdirectory(test)
 #endif ()
 
-export(TARGETS anyopt FILE ${CMAKE_BINARY_DIR}/share/anydsl/cmake/anyopt-exports.cmake)
+export(TARGETS libanyopt anyopt FILE ${CMAKE_BINARY_DIR}/share/anydsl/cmake/anyopt-exports.cmake)
 configure_file(cmake/anyopt-config.cmake.in ${CMAKE_BINARY_DIR}/share/anydsl/cmake/anyopt-config.cmake @ONLY)
