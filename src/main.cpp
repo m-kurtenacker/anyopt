@@ -20,6 +20,7 @@
 #include<thorin/transform/codegen_prepare.h>
 #include<thorin/transform/dead_load_opt.h>
 #include<thorin/transform/flatten_tuples.h>
+#include<thorin/transform/flatten_vectors.h>
 #include<thorin/transform/hoist_enters.h>
 #include<thorin/transform/inliner.h>
 #include<thorin/transform/lift_builtins.h>
