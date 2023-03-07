@@ -303,7 +303,7 @@ int main (int argc, char** argv) {
     thorin.world().set(opts.log_level);
     thorin.world().set(std::make_shared<thorin::Stream>(std::cerr));
 
-#ifdef THORIN_HAS_RLIMITS
+#ifdef THORIN_ENABLE_RLIMITS
     thorin.ensure_stack_size(64L * 1024L * 1024L);
 #endif
 
