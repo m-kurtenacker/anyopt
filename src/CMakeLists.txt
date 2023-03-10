@@ -10,7 +10,10 @@ target_include_directories(libanyopt PUBLIC ${Thorin_INCLUDE_DIRS} ../include)
 #target_link_libraries(libanyopt PUBLIC libartic)
 target_link_libraries(libanyopt PRIVATE nlohmann_json::nlohmann_json)
 
-add_executable(anyopt main.cpp)
+add_executable(anyopt
+    main.cpp
+    analysis.cpp
+)
 set_target_properties(anyopt PROPERTIES CXX_STANDARD 17)
 target_compile_definitions(anyopt PUBLIC -DANYOPT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR} -DANYOPT_VERSION_MINOR=${PROJECT_VERSION_MINOR})
 target_link_libraries(anyopt PUBLIC libanyopt)

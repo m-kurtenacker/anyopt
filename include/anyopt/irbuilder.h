@@ -44,6 +44,9 @@ private:
 #undef CreateFunction
 
 public:
+    std::map<std::string, const thorin::Def*>::iterator begin() { return known_defs.begin(); }
+    std::map<std::string, const thorin::Def*>::iterator end() { return known_defs.end(); }
+
     const thorin::Def * get_def (std::string type_name);
     const thorin::Def * reconstruct_def(json desc);
 };

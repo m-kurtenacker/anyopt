@@ -3,6 +3,8 @@
 #include "anyopt/irbuilder.h"
 #include "anyopt/tables/optpasses.h"
 
+#include "anyopt/analysis.h"
+
 #include<iostream>
 #include<fstream>
 
@@ -46,6 +48,7 @@ static void usage() {
 #define MAP(CLASS, ALIAS, PASS) "                                   " #ALIAS "\n"
             OptPassesEnum(MAP)
 #undef MAP
+                "  -s     --scope                Compute scope of a given continuation and print the names of all definitions that belong to it.\n"
                 "         --passes               Displays the normal optimization pass chain\n"
                 "  -o <name>                     Sets the module name (defaults to the first file name without its extension)\n"
                 ;
@@ -124,6 +127,7 @@ struct ProgramOptions {
     std::string host_cpu;
     std::string host_attr;
     std::string hls_flags;
+    std::string compute_scope;
     bool show_implicit_casts = false;
     unsigned opt_level = 0;
     size_t max_errors = 0;
@@ -214,6 +218,10 @@ struct ProgramOptions {
                         std::cerr << "Did not recognize pass \"" << argv[i] << "\"" << std::endl;
                         return false;
                     }
+                } else if (matches(argv[i], "-s", "--scope")) {
+                    if (!check_arg(argc, argv, i))
+                        return false;
+                    compute_scope = argv[++i];
                 } else if (matches(argv[i], "--tab-width")) {
                     if (!check_arg(argc, argv, i))
                         return false;
@@ -328,6 +336,10 @@ int main (int argc, char** argv) {
         IRBuilder irbuilder(thorin, table, extern_globals);
         for (auto it : data["defs"])
             irbuilder.reconstruct_def(it);
+
+        if (opts.compute_scope != "") {
+            print_scope_analysis(irbuilder, opts.compute_scope);
+        }
     }
 
     for (auto pass : opts.optimizer_passes) {
