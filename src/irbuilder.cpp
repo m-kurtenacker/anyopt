@@ -81,6 +81,14 @@ const thorin::Def * IRBuilder::build_Alloc (json desc) {
     return world().alloc(target_type, args[0], args[1]);
 }
 
+const thorin::Def * IRBuilder::build_Release (json desc) {
+    auto args = get_arglist(desc["args"]);
+
+    assert(args.size() == 2);
+
+    return world().release(args[0], args[1]);
+}
+
 const thorin::Def * IRBuilder::build_Known (json desc) {
     auto def = get_def(desc["def"]);
 

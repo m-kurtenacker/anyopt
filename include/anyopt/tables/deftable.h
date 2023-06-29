@@ -28,6 +28,7 @@ N("struct", Struct) \
 N("tuple", Tuple) \
 N("vector", Vector) \
 N("alloc", Alloc) \
+N("release", Release) \
 N("known", Known) \
 N("sizeof", Sizeof) \
 N("alignof", Alignof) \
