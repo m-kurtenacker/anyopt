@@ -355,7 +355,7 @@ int main (int argc, char** argv) {
     }
 
     for (auto plugin_to_load : opts.plugin_files) {
-        thorin.register_plugin(plugin_to_load);
+        thorin.register_plugin(plugin_to_load.c_str());
     }
 
     for (auto pass : opts.optimizer_passes) {
