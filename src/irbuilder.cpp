@@ -14,7 +14,7 @@ IRBuilder::DefType IRBuilder::resolvedef (std::string def_type) {
         return it->second;
     else {
         std::cerr << "Unknown def type: " << def_type << std::endl;
-        assert(false);
+        abort();
     }
 }
 
@@ -49,7 +49,8 @@ const thorin::Def * IRBuilder::build_Constant (json desc) {
 #define THORIN_F_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box((thorin::M)desc["value"].get<double>()); break; }
 #include <thorin/tables/primtypetable.h>
     default:
-        assert(false && "not implemented");
+        std::cerr << "not implemented\n";
+        abort();
     }
     const thorin::Def* literal = world().literal(primtype->primtype_tag(), value, {});
     return literal;
@@ -189,7 +190,7 @@ thorin::ArithOpTag IRBuilder::resolve_arithop_tag (std::string arithop_tag) {
     if (it != ArithOpMap.end())
         return it->second;
     else
-        assert(false);
+        abort();
 }
 
 const thorin::Def * IRBuilder::build_ArithOp (json desc) {
@@ -211,7 +212,7 @@ thorin::MathOpTag IRBuilder::resolve_mathop_tag (std::string mathop_tag) {
     if (it != MathOpMap.end())
         return it->second;
     else
-        assert(false);
+        abort();
 }
 
 const thorin::Def * IRBuilder::build_MathOp (json desc) {
@@ -270,7 +271,7 @@ thorin::CmpTag IRBuilder::resolve_cmp_tag (std::string cmp_tag) {
     if (it != CmpTagMap.end())
         return it->second;
     else
-        assert(false);
+        abort();
 }
 
 const thorin::Def * IRBuilder::build_Cmp (json desc) {
@@ -435,7 +436,7 @@ const thorin::Def * IRBuilder::build_Assembly (json desc) {
         flags = it->second;
     else {
         std::cerr << "Unknown flag type: " << desc["flags"] << std::endl;
-        assert(false);
+        abort();
     }
 
     return world().assembly(asm_type, inputs, asm_template, out_constraints, in_constraints, clobbers, flags);

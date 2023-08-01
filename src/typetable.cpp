@@ -14,7 +14,7 @@ TypeTable::OptiType TypeTable::resolvetype (std::string type_name) {
         return it->second;
     else {
         std::cerr << "Unknown type: " << type_name << std::endl;
-        assert(false);
+        abort();
     }
 }
 
@@ -30,7 +30,7 @@ thorin::PrimTypeTag TypeTable::resolvetag (std::string type_tag) {
         return it->second;
     else {
         std::cerr << "Unknown primtypetag: " << type_tag << std::endl;
-        assert(false);
+        abort();
     }
 }
 
@@ -46,7 +46,7 @@ thorin::AddrSpace TypeTable::resolveaddrspace (std::string addr_space) {
         return it->second;
     else {
         std::cerr << "Unknown addrspace: " << addr_space << std::endl;
-        assert(false);
+        abort();
     }
 }
 
