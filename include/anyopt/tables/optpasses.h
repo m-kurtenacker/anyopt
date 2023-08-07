@@ -4,7 +4,9 @@
 #define ThorinWorldAdapter(pass) [](thorin::Thorin& thorin) { pass(thorin.world()); }
 
 #define OptPassesEnum(N) \
-N(Cleanup_World, cleanup_world, [](thorin::Thorin& thorin){ thorin.cleanup(); }) \
+N(Verify, verify, ThorinWorldAdapter(verify)) \
+N(Cleanup, cleanup, [](thorin::Thorin& thorin){ thorin.cleanup(); }) \
+N(Lower2CFF, lower2cff, lower2cff) \
 N(PE, pe, pe) \
 N(Mark_PE_Done, mark_pe_done, mark_pe_done) \
 N(Flatten_Tuples, flatten_tuples, flatten_tuples) \

@@ -16,7 +16,8 @@
 #include<thorin/be/c/c.h>
 #include<thorin/be/json/json.h>
 
-#include<thorin/transform/cleanup_world.h>
+#include<thorin/analyses/verify.h>
+
 #include<thorin/transform/clone_bodies.h>
 #include<thorin/transform/closure_conversion.h>
 #include<thorin/transform/codegen_prepare.h>
@@ -82,8 +83,8 @@ static void version() {
 }
 
 static void passes() {
-    std::cout << "--pass cleanup_world "
-              << "--pass pe "
+    std::cout << "--pass cleanup "
+              << "--pass lower2cff "
               << "--pass flatten_tuples "
               << "--pass clone_bodies "
               << "--pass split_slots "
@@ -93,7 +94,7 @@ static void passes() {
               << "--pass inliner "
               << "--pass hoist_enters "
               << "--pass dead_load_opt "
-              << "--pass cleanup_world "
+              << "--pass cleanup "
               << "--pass codegen_prepare"
               << "\n";
 }
@@ -103,10 +104,6 @@ enum OptimizerPass {
 OptPassesEnum(MAP)
 #undef MAP
 };
-
-void mark_pe_done (thorin::Thorin& thorin) {
-    thorin.world().mark_pe_done();
-}
 
 struct ProgramOptions {
     std::vector<std::string> files;
@@ -270,7 +267,15 @@ struct ProgramOptions {
 };
 
 void pe (thorin::Thorin& thorin) {
+    while(partial_evaluation(thorin.world(), false));
+}
+
+void lower2cff (thorin::Thorin& thorin) {
     while(partial_evaluation(thorin.world(), true));
+}
+
+void mark_pe_done (thorin::Thorin& thorin) {
+    thorin.world().mark_pe_done();
 }
 
 int main (int argc, char** argv) {
