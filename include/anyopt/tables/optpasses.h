@@ -10,7 +10,6 @@ N(Lower2CFF, lower2cff, lower2cff) \
 N(PE, pe, pe) \
 N(Mark_PE_Done, mark_pe_done, mark_pe_done) \
 N(Flatten_Tuples, flatten_tuples, flatten_tuples) \
-N(Clone_Bodies, clone_bodies, ThorinWorldAdapter(clone_bodies)) \
 N(Split_Slots, split_slots, split_slots) \
 N(Closure_Conversion, closure_conversion, ThorinWorldAdapter(closure_conversion)) \
 N(Lift_Builtins, lift_builtins, lift_builtins) \

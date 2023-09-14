@@ -18,7 +18,6 @@
 
 #include<thorin/analyses/verify.h>
 
-#include<thorin/transform/clone_bodies.h>
 #include<thorin/transform/closure_conversion.h>
 #include<thorin/transform/codegen_prepare.h>
 #include<thorin/transform/dead_load_opt.h>
@@ -86,9 +85,7 @@ static void passes() {
     std::cout << "--pass cleanup "
               << "--pass lower2cff "
               << "--pass flatten_tuples "
-              << "--pass clone_bodies "
               << "--pass split_slots "
-              << "--pass plugin_execute "
               << "--pass closure_conversion "
               << "--pass lift_builtins "
               << "--pass inliner "
