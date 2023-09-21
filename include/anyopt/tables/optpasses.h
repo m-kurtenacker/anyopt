@@ -16,6 +16,6 @@ N(Lift_Builtins, lift_builtins, lift_builtins) \
 N(Inliner, inliner, inliner) \
 N(Hoist_Enters, hoist_enters, hoist_enters) \
 N(Dead_Load_Opt, dead_load_opt, ThorinWorldAdapter(dead_load_opt)) \
-N(Codegen_Prepare, codegen_prepare, ThorinWorldAdapter(codegen_prepare)) \
+N(Codegen_Prepare, codegen_prepare, codegen_prepare) \
 
 #endif

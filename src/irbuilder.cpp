@@ -121,7 +121,6 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
                 continuation = world().continuation(fn_type);
                 continuation->set_name(desc["internal"]);
                 world().make_external(continuation);
-                continuation->attributes().cc = thorin::CC::Internal;
                 extern_globals_.emplace(continuation->name(), continuation);
             }
         } else if (desc.contains("intrinsic")) {
@@ -156,10 +155,12 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
     if (desc.contains("external")) {
         continuation->set_name(desc["external"]);
         world().make_external(continuation);
+        continuation->attributes().cc = thorin::CC::C;
     }
 
     if (desc.contains("device")) {
         continuation->set_name(desc["device"]);
+        continuation->attributes().cc = thorin::CC::Device;
     }
 
     if (desc.contains("app")) {
