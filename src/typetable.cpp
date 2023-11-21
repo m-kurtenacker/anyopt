@@ -113,10 +113,15 @@ const thorin::Type * TypeTable::build_StructType(json desc) {
             struct_type = const_cast<thorin::StructType*>(forward_decl->second->as<thorin::StructType>());
         } else {
             auto name = desc["struct_name"].get<std::string>();
+            auto struct_redeclare = global_variant_types_.find(name);
+            if (struct_redeclare != global_variant_types_.end())
+                return const_cast<thorin::StructType*>(struct_redeclare->second->as<thorin::StructType>());
+
             struct_type = world().struct_type(name, arg_names.size());
+            global_variant_types_[name] = struct_type;
         }
 
-        if (desc.contains("args")) {
+        if (desc.contains("args") && !struct_type->op(0)) {
             auto args = get_arglist(desc["args"]);
             assert(arg_names.size() == args.size());
             for (size_t i = 0; i < args.size(); ++i) {

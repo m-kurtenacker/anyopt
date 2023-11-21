@@ -13,10 +13,11 @@ namespace anyopt {
 
 class TypeTable {
 public:
-    TypeTable(thorin::Thorin& thorin) : thorin_(thorin) {}
+    TypeTable(thorin::Thorin& thorin, std::map<std::string, const thorin::Type*>& global_variant_types) : thorin_(thorin), global_variant_types_(global_variant_types) {}
 
 private:
     thorin::Thorin& thorin_;
+    std::map<std::string, const thorin::Type*>& global_variant_types_;
 
     std::map<std::string, const thorin::Type*> known_types;
 

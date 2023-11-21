@@ -308,6 +308,7 @@ int main (int argc, char** argv) {
 #endif
 
     thorin::World::Externals extern_globals;
+    std::map<std::string, const thorin::Type*> global_variant_types;
 
     for (auto filename : opts.files) {
         std::ifstream json_input_file(filename);
@@ -341,7 +342,7 @@ int main (int argc, char** argv) {
         if (opts.module_name == "")
             opts.module_name = data["module"].get<std::string>();
 
-        TypeTable table(thorin);
+        TypeTable table(thorin, global_variant_types);
         for (auto it : data["type_table"])
             table.reconstruct_type(it);
 
