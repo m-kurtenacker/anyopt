@@ -304,7 +304,7 @@ int main (int argc, char** argv) {
     thorin.world().set(std::make_shared<thorin::Stream>(std::cerr));
 
 #ifdef THORIN_ENABLE_RLIMITS
-    thorin.ensure_stack_size(64L * 1024L * 1024L);
+    thorin.ensure_stack_size(512L * 1024L * 1024L);
 #endif
 
     thorin::World::Externals extern_globals;
@@ -383,7 +383,7 @@ int main (int argc, char** argv) {
     if (opts.optimizer_passes.empty() && (opts.opt_level > 1 || opts.emit_c || opts.emit_llvm))
         thorin.opt();
     if (opts.emit_thorin)
-        thorin.world().dump();
+        thorin.world().dump_scoped();
 
     if (opts.emit_json || opts.emit_c || opts.emit_llvm) {
         auto emit_to_file = [&] (thorin::CodeGen& cg) {
