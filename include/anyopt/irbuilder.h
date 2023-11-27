@@ -8,6 +8,7 @@
 #include<thorin/world.h>
 #include<nlohmann/json.hpp>
 #include<map>
+#include<set>
 
 using json = nlohmann::json;
 
@@ -15,12 +16,15 @@ namespace anyopt {
 
 class IRBuilder {
 public:
-    IRBuilder(thorin::Thorin& thorin, TypeTable& typetable, thorin::World::Externals& extern_globals) : thorin_(thorin), typetable_(typetable), extern_globals_(extern_globals) {}
+    IRBuilder(thorin::Thorin& thorin, TypeTable& typetable, thorin::World::Externals& extern_globals, bool remove_interns, std::set<std::string>& keep_interns) : thorin_(thorin), typetable_(typetable), extern_globals_(extern_globals), remove_interns_(remove_interns), keep_interns_(keep_interns) {}
 
 private:
     thorin::Thorin& thorin_;
     TypeTable& typetable_;
     thorin::World::Externals& extern_globals_;
+
+    bool remove_interns_;
+    std::set<std::string>& keep_interns_;
 
     std::map<std::string, const thorin::Def*> known_defs;
 

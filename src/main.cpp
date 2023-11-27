@@ -50,6 +50,8 @@ static void usage() {
 #define MAP(CLASS, ALIAS, PASS) "                                   " #ALIAS "\n"
             OptPassesEnum(MAP)
 #undef MAP
+                "         --remove-interns       Turn all internal continuations into normal thorin continuations.\n"
+                "         --keep-intern <name>   Keep a specific intern by name. This implies --remove-interns.\n"
                 "  -s     --scope                Compute scope of a given continuation and print the names of all definitions that belong to it.\n"
                 "         --passes               Displays the normal optimization pass chain\n"
                 "  -o <name>                     Sets the module name (defaults to the first file name without its extension)\n"
@@ -108,6 +110,10 @@ OptPassesEnum(MAP)
 struct ProgramOptions {
     std::vector<std::string> files;
     std::vector<OptimizerPass> optimizer_passes;
+
+    bool remove_interns = false;
+    std::set<std::string> keep_interns;
+
     std::string module_name;
     bool exit = false;
     bool no_color = false;
@@ -218,6 +224,13 @@ struct ProgramOptions {
                         std::cerr << "Did not recognize pass \"" << argv[i] << "\"" << std::endl;
                         return false;
                     }
+                } else if (matches(argv[i], "--remove-interns")) {
+                    remove_interns = true;
+                } else if (matches(argv[i], "--keep-intern")) {
+                    remove_interns = true;
+                    if (!check_arg(argc, argv, i))
+                        return false;
+                    keep_interns.insert(argv[++i]);
                 } else if (matches(argv[i], "-s", "--scope")) {
                     if (!check_arg(argc, argv, i))
                         return false;
@@ -346,7 +359,7 @@ int main (int argc, char** argv) {
         for (auto it : data["type_table"])
             table.reconstruct_type(it);
 
-        IRBuilder irbuilder(thorin, table, extern_globals);
+        IRBuilder irbuilder(thorin, table, extern_globals, opts.remove_interns, opts.keep_interns);
         for (auto it : data["defs"])
             irbuilder.reconstruct_def(it);
 

@@ -128,7 +128,11 @@ const thorin::Def * IRBuilder::build_Continuation (json desc) {
                 auto fn_type = typetable_.get_type(desc["fn_type"])->as<thorin::FnType>();
                 continuation = world().continuation(fn_type);
                 continuation->set_name(desc["internal"]);
-                world().make_external(continuation);
+                if (!remove_interns_) {
+                    world().make_external(continuation);
+                } else if (remove_interns_ && keep_interns_.find(desc["internal"]) != keep_interns_.end()) {
+                    world().make_external(continuation);
+                }
                 extern_globals_.emplace(continuation->name(), continuation);
             }
         } else if (desc.contains("intrinsic")) {
