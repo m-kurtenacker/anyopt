@@ -18,6 +18,8 @@
 
 #include<thorin/analyses/verify.h>
 
+#include<thorin/transform/cleanup_world.h>
+#include<thorin/transform/clone_bodies.h>
 #include<thorin/transform/closure_conversion.h>
 #include<thorin/transform/codegen_prepare.h>
 #include<thorin/transform/dead_load_opt.h>
@@ -45,7 +47,7 @@ static void usage() {
                 "         --emit-llvm            Emits LLVM IR in the output file\n"
                 "  -On                           Sets the optimization level (n = 0, 1, 2, or 3, defaults to 0)\n"
                 "  -p     --pass                 Manually supply passes that are going to be executed. Passes are:\n"
-#define MAP(CLASS, ALIAS, PASS) "                                   " #ALIAS "\n"
+#define MAP(CLASS, ALIAS) "                                   " #ALIAS "\n"
             OptPassesEnum(MAP)
 #undef MAP
                 "  -s     --scope                Compute scope of a given continuation and print the names of all definitions that belong to it.\n"
@@ -97,10 +99,14 @@ static void passes() {
 }
 
 enum OptimizerPass {
-#define MAP(CLASS, ALIAS, PASS) CLASS,
+#define MAP(CLASS, ALIAS) CLASS,
 OptPassesEnum(MAP)
 #undef MAP
 };
+
+void mark_pe_done (thorin::World& world) {
+    world.mark_pe_done();
+}
 
 struct ProgramOptions {
     std::vector<std::string> files;
@@ -205,7 +211,7 @@ struct ProgramOptions {
                     i++;
                     using namespace std::string_literals;
                     if (false) {}
-#define MAP(CLASS, ALIAS, PASS) else if (argv[i] == #ALIAS##s) { optimizer_passes.push_back(CLASS); }
+#define MAP(CLASS, ALIAS) else if (argv[i] == #ALIAS##s) { optimizer_passes.push_back(CLASS); }
                     OptPassesEnum(MAP)
 #undef MAP
                     else {
@@ -263,16 +269,12 @@ struct ProgramOptions {
     }
 };
 
-void pe (thorin::Thorin& thorin) {
-    while(partial_evaluation(thorin.world(), false));
+void pe (thorin::World& world) {
+    while(partial_evaluation(world, false));
 }
 
-void lower2cff (thorin::Thorin& thorin) {
-    while(partial_evaluation(thorin.world(), true));
-}
-
-void mark_pe_done (thorin::Thorin& thorin) {
-    thorin.world().mark_pe_done();
+void lower2cff (thorin::World& world) {
+    while(partial_evaluation(world, true));
 }
 
 int main (int argc, char** argv) {
@@ -293,9 +295,9 @@ int main (int argc, char** argv) {
         opts.module_name = data["module"].get<std::string>();
     }
 
-    thorin::Thorin thorin(opts.module_name);
-    thorin.world().set(opts.log_level);
-    thorin.world().set(std::make_shared<thorin::Stream>(std::cerr));
+    thorin::World world(opts.module_name);
+    world.set(opts.log_level);
+    world.set(std::make_shared<thorin::Stream>(std::cerr));
 
     thorin::World::Externals extern_globals;
 
@@ -331,11 +333,11 @@ int main (int argc, char** argv) {
         if (opts.module_name == "")
             opts.module_name = data["module"].get<std::string>();
 
-        TypeTable table(thorin);
+        TypeTable table(world);
         for (auto it : data["type_table"])
             table.reconstruct_type(it);
 
-        IRBuilder irbuilder(thorin, table, extern_globals);
+        IRBuilder irbuilder(world, table, extern_globals);
         for (auto it : data["defs"])
             irbuilder.reconstruct_def(it);
 
@@ -346,14 +348,14 @@ int main (int argc, char** argv) {
 
     for (auto pass : opts.optimizer_passes) {
         switch (pass) {
-#define MAP(CLASS, ALIAS, PASS) case CLASS: std::cerr << #ALIAS << std::endl; PASS(thorin); break;
+#define MAP(CLASS, ALIAS) case CLASS: std::cerr << #ALIAS << std::endl; ALIAS(world); break;
             OptPassesEnum(MAP)
 #undef MAP
         }
     }
 
     if (opts.optimizer_passes.empty() && opts.opt_level == 1)
-        thorin.cleanup();
+        world.cleanup();
     if (opts.emit_c_int) {
         auto name = opts.module_name + ".h";
         std::ofstream file(name);
@@ -361,16 +363,16 @@ int main (int argc, char** argv) {
             std::cerr << "cannot open '" << name << "' for writing" << std::endl;
         else {
             thorin::Stream stream(file);
-            thorin::c::emit_c_int(thorin, stream);
+            thorin::c::emit_c_int(world, stream);
         }
     }
 
     if (opts.optimizer_passes.empty() && (opts.opt_level > 1 || opts.emit_c || opts.emit_llvm))
-        thorin.opt();
+        world.opt();
     if (opts.emit_thorin)
-        thorin.world().dump();
-
+        world.dump();
     if (opts.emit_json || opts.emit_c || opts.emit_llvm) {
+        thorin::DeviceBackends backends(world, opts.opt_level, opts.debug, opts.hls_flags);
         auto emit_to_file = [&] (thorin::CodeGen& cg) {
             auto name = opts.module_name + cg.file_ext();
             std::ofstream file(name);
@@ -379,26 +381,23 @@ int main (int argc, char** argv) {
             else
                 cg.emit_stream(file);
         };
-        if (opts.emit_json) {
-            thorin::json::CodeGen cg(thorin, opts.debug, opts.host_triple, opts.host_cpu, opts.host_attr);
+        if (opts.emit_c) {
+            thorin::Cont2Config kernel_configs;
+            thorin::c::CodeGen cg(world, kernel_configs, thorin::c::Lang::C99, opts.debug, opts.hls_flags);
             emit_to_file(cg);
         }
-        if (opts.emit_c || opts.emit_llvm) {
-            thorin::DeviceBackends backends(thorin.world(), opts.opt_level, opts.debug, opts.hls_flags);
-            if (opts.emit_c) {
-                thorin::Cont2Config kernel_configs;
-                thorin::c::CodeGen cg(thorin, kernel_configs, thorin::c::Lang::C99, opts.debug, opts.hls_flags);
-                emit_to_file(cg);
-            }
-            if (opts.emit_llvm) {
-                thorin::llvm::CPUCodeGen cg(thorin, opts.opt_level, opts.debug, opts.host_triple, opts.host_cpu, opts.host_attr);
-                emit_to_file(cg);
-            }
-            for (auto& cg : backends.cgs) {
-                if (cg) {
-                    std::cerr << "AnyOpt Codegen " << cg->file_ext() << std::endl;
-                    emit_to_file(*cg);
-                }
+        if (opts.emit_json) {
+            thorin::json::CodeGen cg(world, opts.debug, opts.host_triple, opts.host_cpu, opts.host_attr);
+            emit_to_file(cg);
+        }
+        if (opts.emit_llvm) {
+            thorin::llvm::CPUCodeGen cg(world, opts.opt_level, opts.debug, opts.host_triple, opts.host_cpu, opts.host_attr);
+            emit_to_file(cg);
+        }
+        for (auto& cg : backends.cgs) {
+            if (cg) {
+                std::cerr << "AnyOpt Codegen " << cg->file_ext() << std::endl;
+                emit_to_file(*cg);
             }
         }
     }

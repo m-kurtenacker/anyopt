@@ -21,6 +21,5 @@ N("global", Global) \
 N("texture", Texture) \
 N("shared", Shared) \
 N("constant", Constant) \
-N("private", Private) \
 
 #endif
