@@ -46,7 +46,23 @@ const thorin::Def * IRBuilder::build_Constant (json desc) {
     switch (primtype->tag()) {
 #define THORIN_I_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box(desc["value"].get<thorin::M>()); break; }
 #define THORIN_BOOL_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box(desc["value"].get<M>()); break; }
-#define THORIN_F_TYPE(T, M) case thorin::PrimType_##T: { value = thorin::Box((thorin::M)desc["value"].get<double>()); break; }
+#define THORIN_F_TYPE(T, M) case thorin::PrimType_##T: { \
+    if (desc.contains("special")) { \
+        auto special = desc["special"]; \
+        if (special == "inf") { \
+            value = INFINITY; \
+        } else if (special == "-inf") { \
+            value = - INFINITY; \
+        } else if (special == "nan") { \
+            value = NAN; \
+        } else if (special == "-nan") { \
+            value = NAN; \
+        } \
+    } else { \
+        value = thorin::Box((thorin::M)desc["value"].get<double>()); \
+    } \
+    break; \
+}
 #include <thorin/tables/primtypetable.h>
     default:
         std::cerr << "not implemented\n";
