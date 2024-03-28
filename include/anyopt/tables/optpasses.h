@@ -6,12 +6,12 @@
 #define OptPassesEnum(N) \
 N(Verify, verify, ThorinWorldAdapter(verify)) \
 N(Cleanup, cleanup, [](thorin::Thorin& thorin){ thorin.cleanup(); }) \
+N(Cleanup_Fix_Point, cleanup_fix_point, [](thorin::Thorin& thorin){ thorin.cleanup_fix_point(); }) \
 N(Lower2CFF, lower2cff, lower2cff) \
 N(PE, pe, pe) \
 N(Mark_PE_Done, mark_pe_done, mark_pe_done) \
 N(Flatten_Tuples, flatten_tuples, flatten_tuples) \
 N(Split_Slots, split_slots, split_slots) \
-N(Plugin_Execute, plugin_execute, plugin_execute) \
 N(Closure_Conversion, closure_conversion, ThorinWorldAdapter(closure_conversion)) \
 N(Lift_Builtins, lift_builtins, lift_builtins) \
 N(Inliner, inliner, inliner) \

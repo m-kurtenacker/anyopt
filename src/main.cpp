@@ -90,7 +90,6 @@ static void passes() {
               << "--pass lower2cff "
               << "--pass flatten_tuples "
               << "--pass split_slots "
-              << "--pass plugin_execute "
               << "--pass closure_conversion "
               << "--pass lift_builtins "
               << "--pass inliner "
@@ -283,11 +282,11 @@ struct ProgramOptions {
 };
 
 void pe (thorin::Thorin& thorin) {
-    while(partial_evaluation(thorin.world(), false));
+    while(partial_evaluation(thorin, false));
 }
 
 void lower2cff (thorin::Thorin& thorin) {
-    while(partial_evaluation(thorin.world(), true));
+    while(partial_evaluation(thorin, true));
 }
 
 void mark_pe_done (thorin::Thorin& thorin) {
