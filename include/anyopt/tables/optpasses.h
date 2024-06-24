@@ -17,5 +17,7 @@ N(Inliner, inliner, inliner) \
 N(Hoist_Enters, hoist_enters, hoist_enters) \
 N(Dead_Load_Opt, dead_load_opt, ThorinWorldAdapter(dead_load_opt)) \
 N(Codegen_Prepare, codegen_prepare, codegen_prepare) \
+N(Dump_Scoped, dump_scoped, [](thorin::Thorin& thorin) { thorin.world().dump_scoped(); }) \
+N(Dump, dump, [](thorin::Thorin& thorin) { thorin.world().dump(); }) \
 
 #endif
