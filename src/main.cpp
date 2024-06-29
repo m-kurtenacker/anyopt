@@ -184,6 +184,8 @@ struct ProgramOptions {
                     if (max_errors == 0) {
                         return false;
                     }
+                } else if (matches(argv[i], "-g", "--debug")) {
+                    debug = true;
                 } else if (matches(argv[i], "--plugin")) {
                     plugin_files.push_back(argv[++i]);
                 } else if (matches(argv[i], "--emit-thorin")) {
