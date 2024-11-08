@@ -126,8 +126,10 @@ const thorin::Type * TypeTable::build_StructType(json desc) {
             assert(arg_names.size() == args.size());
             for (size_t i = 0; i < args.size(); ++i) {
                 auto arg_name = desc["arg_names"][i].get<std::string>();
-                struct_type->set_op(i, args[i]);
-                struct_type->set_op_name(i, arg_name);
+                if (!struct_type->op(i)) {
+                    struct_type->set_op(i, args[i]);
+                    struct_type->set_op_name(i, arg_name);
+                }
             }
         }
 
@@ -143,15 +145,22 @@ const thorin::Type * TypeTable::build_VariantType(json desc) {
             variant_type = const_cast<thorin::VariantType*>(forward_decl->second->as<thorin::VariantType>());
         } else {
             auto name = desc["variant_name"].get<std::string>();
+            auto variant_redeclare = global_variant_types_.find(name);
+            if (variant_redeclare != global_variant_types_.end())
+                return const_cast<thorin::VariantType*>(variant_redeclare->second->as<thorin::VariantType>());
+
             variant_type = world().variant_type(name, arg_names.size());
+            global_variant_types_[name] = variant_type;
         }
 
         if (desc.contains("args")) {
             auto args = get_arglist(desc["args"]);
             for (size_t i = 0; i < args.size(); ++i) {
                 auto arg_name = desc["arg_names"][i].get<std::string>();
-                variant_type->set_op(i, args[i]);
-                variant_type->set_op_name(i, arg_name);
+                if (!variant_type->op(i)) {
+                    variant_type->set_op(i, args[i]);
+                    variant_type->set_op_name(i, arg_name);
+                }
             }
         }
 
