@@ -169,14 +169,12 @@ const thorin::Type * TypeTable::build_PtrType(json desc) {
         assert(args.size() == 1);
         size_t length = desc["length"].get<size_t>();
         int32_t device = -1;
-        if (desc.contains("device"))
-            device = desc["device"];
         auto addrspace = thorin::AddrSpace::Generic;
         if (desc.contains("addrspace")) {
             addrspace = resolveaddrspace(desc["addrspace"]);
         }
 
-        return world().ptr_type(args[0], length, device, addrspace);
+        return world().ptr_type(args[0], length, addrspace);
 }
 
 const thorin::Type * TypeTable::reconstruct_type(json desc) {
